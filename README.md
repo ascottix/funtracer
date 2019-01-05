@@ -38,7 +38,13 @@ Note that any option, if present, must be specified **before** the name of the s
 
 If no scene file is specified, the program looks for a file named `have.fun` and reads it if present.
 
-The directory `scenes` contains several scene file to try.
+The directory `scenes` contains several scene file to try. Try for example:
+
+`./funtracer scenes/teapot`
+
+or if you can wait a few minutes go for a larger picture with antialiasing:
+
+`./funtracer -ow 800 -oh 400 -ss 16 scenes/teapot`
 
 Options may also be specified in a `config.json` file, for example:
 
