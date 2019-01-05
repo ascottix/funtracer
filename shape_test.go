@@ -276,3 +276,89 @@ func TestCylinderNormal(t *testing.T) {
 	test(0.5, 2, 0, 0, 1, 0)
 	test(0, 2, 0.5, 0, 1, 0)
 }
+
+// Cone
+func TestConeIntersect(t *testing.T) {
+	c := NewInfiniteCone()
+
+	hit := func(px, py, pz, dx, dy, dz float64, ts ...float64) {
+		r := NewRay(Point(px, py, pz), Vector(dx, dy, dz).Normalize())
+		xs := c.shapable.LocalIntersect(r)
+
+		if len(xs) != len(ts) {
+			t.Errorf("cone intersect bad length: %+v = %d expected %d", r, len(xs), len(ts))
+		} else {
+			for i, v := range ts {
+				if !FloatEqual(xs[i], v) {
+					t.Errorf("cone intersect failed: %+v = %f, %f", r, xs[i], v)
+				}
+			}
+		}
+	}
+
+	hit2 := func(px, py, pz, dx, dy, dz float64, n int) {
+		r := NewRay(Point(px, py, pz), Vector(dx, dy, dz).Normalize())
+		xs := c.shapable.LocalIntersect(r)
+
+		if len(xs) != n {
+			t.Errorf("cone intersect bad length: %+v = %d should be %d", r, len(xs), n)
+		}
+	}
+
+	hit(0, 0, -5, 0, 0, 1, 5, 5)
+	hit(0, 0, -5, 1, 1, 1, 8.66025, 8.66025)
+	hit(1, 1, -5, -0.5, -1, 1, 4.55006, 49.44994)
+
+	c = NewCone( -0.5, 0.5, true)
+
+	hit2(0, 0, -5, 0, 1, 0, 0)
+	hit2(0, 0, -0.25, 0, 1, 1, 2)
+	hit2(0, 0, -0.25, 0, 1, 0, 4)
+}
+
+func TestConeNormal(t *testing.T) {
+	c := NewInfiniteCone()
+
+	test := func(px, py, pz, nx, ny, nz float64) {
+		n := c.shapable.LocalNormalAt(Point(px, py, pz))
+
+		if !n.Equals(Vector(nx, ny, nz)) {
+			t.Errorf("cone normal failed: %+v should be %+v", n, Vector(nx, ny, nz))
+		}
+	}
+
+	test(0, 0, 0, 0, 0, 0)
+	test(1, 1, 1, 1, -math.Sqrt(2), 1)
+	test(-1, -1, 0, -1, 1, 0)
+}
+
+func TestConeVisualization(t *testing.T) {
+	TestWithImage(t)
+
+	w := NewWorld()
+
+	w.AddLights(NewPointLight(Point(-10, 10, -10), White))
+
+	c1 := NewCone(-1, 1, true)
+	c2 := NewCone(-1.5, 1, true)
+	c2.SetTransform(Translation(2,-2,0))
+	c3 := NewCone(-0.5, 1, false)
+	c3.SetTransform(Translation(-2,-2,0))
+	c4 := NewCone(0, 1, false)
+	c4.SetTransform(Translation(-2,+1,0), Scaling(1.3, 0.6, 1.3))
+	c5 := NewCone(-1, 0, false)
+	c5.SetTransform(Translation(2,+1,0), Scaling(0.6, 1.3, 0.6))
+
+	// The purpose of these cylinders is to project shadows on the cones
+	u1 := NewInfiniteCylinder()	
+	u1.SetTransform(Translation(-4,0,-5), Scaling(0.1))
+	u2 := NewInfiniteCylinder()	
+	u2.SetTransform(Translation(-6.1,0,-5), Scaling(0.1))
+
+	w.AddObjects(c1,c2,c3,c4,c5,u1,u2)
+
+	camera := NewCamera(640, 480, Pi/2)
+	camera.SetTransform(EyeViewpoint(Point(0, 0, -5), Point(0, 0, 0), Vector(0, 1, 0)))
+
+	w.RenderToPNG(camera, "test_cones.png")
+}

@@ -9,7 +9,7 @@ import (
 )
 
 func TestSbtBox(t *testing.T) {
-	// TestWithImage(t)
+	TestWithImage(t)
 
 	scene := `
 SBT-raytracer 1.0
