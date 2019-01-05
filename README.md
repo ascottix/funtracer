@@ -1,6 +1,6 @@
 # Funtracer
 
-It's a simple raytracer in Go.
+A simple raytracer in Go.
 
 Funtracer is based on [The Ray Tracer Challenge](https://pragprog.com/book/jbtracer/the-ray-tracer-challenge "The Ray Tracer Challenge") book by Jamis Buck.
 
@@ -28,12 +28,11 @@ As the program was developed using a test-driven approach, there are a number of
 
 `go test`
 
-Some tests will generated a PNG file, look for files named `test_*.png` when the suite completes.
+Some tests will generate a PNG file, look for files named `test_*.png`.
 
 ## How to use
 
-Funtracer takes a scene file and converts it into a PNG image. A number of options may also be specified, run the program without arguments to
-display usage information.
+Funtracer takes a scene file and converts it into a PNG image. A number of options may also be specified, run the program without arguments to display usage information.
 
 Note that any option, if present, must be specified **before** the name of the scene file, or it will be ignored.
 
