@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -309,7 +310,7 @@ func TestConeIntersect(t *testing.T) {
 	hit(0, 0, -5, 1, 1, 1, 8.66025, 8.66025)
 	hit(1, 1, -5, -0.5, -1, 1, 4.55006, 49.44994)
 
-	c = NewCone( -0.5, 0.5, true)
+	c = NewCone(-0.5, 0.5, true)
 
 	hit2(0, 0, -5, 0, 1, 0, 0)
 	hit2(0, 0, -0.25, 0, 1, 1, 2)
@@ -341,24 +342,161 @@ func TestConeVisualization(t *testing.T) {
 
 	c1 := NewCone(-1, 1, true)
 	c2 := NewCone(-1.5, 1, true)
-	c2.SetTransform(Translation(2,-2,0))
+	c2.SetTransform(Translation(2, -2, 0))
 	c3 := NewCone(-0.5, 1, false)
-	c3.SetTransform(Translation(-2,-2,0))
+	c3.SetTransform(Translation(-2, -2, 0))
 	c4 := NewCone(0, 1, false)
-	c4.SetTransform(Translation(-2,+1,0), Scaling(1.3, 0.6, 1.3))
+	c4.SetTransform(Translation(-2, +1, 0), Scaling(1.3, 0.6, 1.3))
 	c5 := NewCone(-1, 0, false)
-	c5.SetTransform(Translation(2,+1,0), Scaling(0.6, 1.3, 0.6))
+	c5.SetTransform(Translation(2, +1, 0), Scaling(0.6, 1.3, 0.6))
 
 	// The purpose of these cylinders is to project shadows on the cones
-	u1 := NewInfiniteCylinder()	
-	u1.SetTransform(Translation(-4,0,-5), Scaling(0.1))
-	u2 := NewInfiniteCylinder()	
-	u2.SetTransform(Translation(-6.1,0,-5), Scaling(0.1))
+	u1 := NewInfiniteCylinder()
+	u1.SetTransform(Translation(-4, 0, -5), Scaling(0.1))
+	u2 := NewInfiniteCylinder()
+	u2.SetTransform(Translation(-6.1, 0, -5), Scaling(0.1))
 
-	w.AddObjects(c1,c2,c3,c4,c5,u1,u2)
+	w.AddObjects(c1, c2, c3, c4, c5, u1, u2)
 
 	camera := NewCamera(640, 480, Pi/2)
 	camera.SetTransform(EyeViewpoint(Point(0, 0, -5), Point(0, 0, 0), Vector(0, 1, 0)))
 
 	w.RenderToPNG(camera, "test_cones.png")
+}
+
+type _sphere struct {
+	x, y, z, r float64
+}
+
+func TestSphereChallenge(t *testing.T) {
+	TestWithImage(t)
+
+	const Scale = 4.0
+	const MaxSpheres = 2000
+	const Radius = 12.0
+
+	glass_material := func(color Color) *Material {
+		m := MatMatte(color)
+		m.SetDiffuse(0.1)
+		m.SetAmbient(0)
+		m.SetSpecular(0.5)
+		m.SetShininess(100)
+		m.SetReflective(0.9)
+		m.SetRefractive(0.9, 1.5)
+
+		return m
+	}
+
+	metal_material := func(color Color) *Material {
+		m := MatMatte(color)
+		m.SetDiffuse(0.6)
+		m.SetAmbient(0.1)
+		m.SetSpecular(0.4)
+		m.SetShininess(7)
+		m.SetReflective(0.1)
+
+		return m
+	}
+
+	frand := NewRandomGenerator(5)
+
+	random_color := func() Color {
+		r := 0.5 + frand()*0.5
+		g := 0.5 + frand()*0.5
+		b := 0.5 + frand()*0.5
+
+		return RGB(r, g, b)
+	}
+
+	random_material := func() *Material {
+		if frand() < 0.1 {
+			return glass_material(random_color())
+		} else {
+			return metal_material(random_color())
+		}
+	}
+
+	world := NewWorld()
+
+	world.AddLights(
+		NewPointLight(Point(-100, 100, -100), White),
+		NewPointLight(Point(150, 30, -50), Gray(0.2)),
+		NewPointLight(Point(0, 0, 0), Gray(0.5)),
+	)
+
+	spheres := make([]_sphere, 0, MaxSpheres)
+
+	group := NewGroup()
+
+	world.AddObjects(group)
+
+	add_sphere := func(x, y, z, r float64) {
+		spheres = append(spheres, _sphere{x, y, z, r})
+
+		s := NewSphere()
+		s.SetMaterial(random_material())
+		s.SetTransform(Translation(x, y, z), Scaling(r))
+
+		group.Add(s)
+	}
+
+	add_sphere(0, Radius, 0, 1)
+
+	attempts := 0
+	for len(spheres) < MaxSpheres && attempts < 10000 {
+		min_r := 0.5
+		max_r := 1.5
+
+		if attempts > 1000 {
+			min_r *= 0.5
+			max_r *= 0.5
+		}
+
+		theta := frand() * Pi
+		phi := frand() * Pi * 2
+		r := min_r + (frand() * (max_r - min_r))
+
+		x := Radius * math.Sin(theta) * math.Cos(phi)
+		y := Radius * math.Cos(theta)
+		z := Radius * math.Sin(theta) * math.Sin(phi)
+
+		ok := true
+
+		for j := 0; j < len(spheres); j++ {
+			x2 := spheres[j].x
+			y2 := spheres[j].y
+			z2 := spheres[j].z
+			r2 := spheres[j].r
+
+			xd := x - x2
+			yd := y - y2
+			zd := z - z2
+			rd := r + r2
+
+			ok = xd*xd+yd*yd+zd*zd > rd*rd
+
+			if !ok {
+				break
+			}
+		}
+
+		if ok {
+			add_sphere(x, y, z, r)
+
+			attempts = 0
+			if false {
+				fmt.Printf("spheres: %d (latest @ %f,%f,%f <%f>)\n", len(spheres), x, y, z, r)
+			}
+		} else {
+			attempts++
+		}
+	}
+
+	group.BuildBVH()
+
+	camera := NewCamera(250*Scale, 250*Scale, Pi/6)
+	camera.SetTransform(EyeViewpoint(Point(50, 15, -50), Point(0, 0, 0), Vector(0, 1, 0)))
+
+	world.ErpCanvasToImage = ErpLinear
+	world.RenderToPNG(camera, fmt.Sprintf("test_%d_spheres_challenge.png", len(spheres)))
 }

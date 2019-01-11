@@ -159,13 +159,15 @@ func createReflectionsAndRefractionsScene() *Scene {
 	southWall.SetTransform(Translation(0, 0, -5), RotationX(1.5708))
 	southWall.SetMaterial(wallMaterial)
 
+	group := NewGroup()
+
 	addBackSphere := func(scale, tx, ty, tz, r, g, b float64) {
 		s := NewSphere()
 		s.Material().SetPattern(NewSolidColorPattern(RGB(r, g, b)))
 		s.Material().SetShininess(50)
 		s.SetTransform(Translation(tx, ty, tz), Scaling(scale, scale, scale))
 
-		world.AddObjects(s)
+		group.Add(s)
 	}
 
 	addBackSphere(0.4, 4.6, 0.4, 1, 0.8, 0.5, 0.3)
@@ -184,14 +186,19 @@ func createReflectionsAndRefractionsScene() *Scene {
 			s.Material().SetSpecular(0.4).SetShininess(5)
 		}
 
-		world.AddObjects(s)
+		group.Add(s)
 	}
 
 	addForeSphere(1, -0.6, 1, 0.6, 1, 0.3, 0.2, false)
 	addForeSphere(0.7, 0.6, 0.7, -0.6, 0, 0, 0.2, true)
 	addForeSphere(0.5, -0.7, 0.5, -0.8, 0, 0.2, 0, true)
 
+	// Note: don't add infinite objects to a group if going to use a BVH
 	world.AddObjects(floor, ceiling, westWall, eastWall, northWall, southWall)
+
+	group.BuildBVH()
+
+	world.AddObjects(group)
 
 	camera := NewCamera(800, 400, 1.152)
 	camera.SetTransform(EyeViewpoint(Point(-2.6, 1.5, -3.9), Point(-0.6, 1, -0.8), Vector(0, 1, 0)))

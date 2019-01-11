@@ -622,6 +622,16 @@ func ParseSbtScene(reader io.Reader, options *SbtParserOptions) (scene *Scene, e
 			shape(NewInfiniteCylinder(), t)
 		case check("cyl_uncapped"):
 			shape(NewCylinder(-1, +1, false), t)
+		case check("cone"):
+			miny := matchFloat()
+			maxy := matchFloat()
+			shape(NewCone(miny, maxy, true), t)
+		case check("cone_infinite"):
+			shape(NewInfiniteCone(), t)
+		case check("cone_uncapped"):
+			miny := matchFloat()
+			maxy := matchFloat()
+			shape(NewCone(miny, maxy, false), t)
 		case check("plane"):
 			shape(NewPlane(), t)
 		case check("polymesh"):

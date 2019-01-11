@@ -10,9 +10,10 @@ The main goal of Funtracer is to have fun and learn Go with a project that can o
 
 So far it has worked really well (the way the book is designed helps a lot) and although the program cannot boast any particularly amazing feature, it takes great pride and satisfaction in what it _can_ do:
 
-- Basic shapes: cube, cylinder, plane, sphere, triangle meshes
+- Basic shapes: cone, cube, cylinder, plane, sphere, triangle meshes
 - Groups
 - Constructive Solid Geometry (CSG)
+- Bounding Volume Hierarchies (BVH)
 - Color patterns
 - Lights: directional, point, spot
 - Import .fun, .ray and .obj files

@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -52,20 +53,21 @@ func (b Box) Transform(m Matrix) Box {
 }
 
 func (b Box) Intersects(ray Ray) bool {
-	checkAxis := func(origin, direction, min, max float64) (tmin, tmax float64) {
-		tminNumerator := min - origin
-		tmaxNumerator := max - origin
+	ray.Direction.X = 1 / ray.Direction.X
+	ray.Direction.Y = 1 / ray.Direction.Y
+	ray.Direction.Z = 1 / ray.Direction.Z
 
-		if math.Abs(direction) >= Epsilon {
-			tmin = tminNumerator / direction
-			tmax = tmaxNumerator / direction
+	return b.IntersectsInvDir(ray)
+}
+
+func (b Box) IntersectsInvDir(ray Ray) bool {
+	checkAxis := func(origin, invdir, min, max float64) (tmin, tmax float64) {
+		if invdir >= 0 {
+			tmin = (min - origin) * invdir
+			tmax = (max - origin) * invdir
 		} else {
-			tmin = tminNumerator * math.Inf(+1)
-			tmax = tmaxNumerator * math.Inf(+1)
-		}
-
-		if tmin > tmax {
-			tmin, tmax = tmax, tmin
+			tmax = (min - origin) * invdir
+			tmin = (max - origin) * invdir
 		}
 
 		return tmin, tmax
@@ -75,8 +77,32 @@ func (b Box) Intersects(ray Ray) bool {
 	ytmin, ytmax := checkAxis(ray.Origin.Y, ray.Direction.Y, b.Min.Y, b.Max.Y)
 	ztmin, ztmax := checkAxis(ray.Origin.Z, ray.Direction.Z, b.Min.Z, b.Max.Z)
 
-	tmin := math.Max(xtmin, math.Max(ytmin, ztmin))
-	tmax := math.Min(xtmax, math.Min(ytmax, ztmax))
+	tmin := math.Inf(-1)
+	tmax := math.Inf(+1)
+
+	// Note to self: do _not_ use something like math.Max(xtmin, math.Max(ytmin, ztmin)) because
+	// it will fail completely when one of the operands is NaN, whereas the method below will
+	// simply skip over the invalid value (we get a 0/0 NaN from checkAxis when direction=0 and min/max=origin)
+
+	if xtmin > tmin {
+		tmin = xtmin
+	}
+	if ytmin > tmin {
+		tmin = ytmin
+	}
+	if ztmin > tmin {
+		tmin = ztmin
+	}
+
+	if xtmax < tmax {
+		tmax = xtmax
+	}
+	if ytmax < tmax {
+		tmax = ytmax
+	}
+	if ztmax < tmax {
+		tmax = ztmax
+	}
 
 	return tmin < tmax
 }
@@ -91,4 +117,38 @@ func (b Box) ToCube() *Shape {
 	s.SetTransform(Translation(b.Max.X-sx, b.Max.Y-sy, b.Max.Z-sz), Scaling(sx, sy, sz))
 
 	return s
+}
+
+func (b Box) Diagonal() Tuple {
+	return Vector(b.Max.X-b.Min.X, b.Max.Y-b.Min.Y, b.Max.Z-b.Min.Z)
+}
+
+func (b Box) SurfaceArea() float64 {
+	d := b.Diagonal()
+
+	return 2 * (d.X*d.Y + d.X*d.Z + d.Y*d.Z)
+}
+
+// Offset computes the offset of a point inside the bounding box,
+// it is a vector with components in the [0,1] interval
+func (b Box) Offset(p Tuple) Tuple {
+	o := p.Sub(b.Min)
+
+	if b.Max.X > b.Min.X {
+		o.X /= (b.Max.X - b.Min.X)
+	}
+
+	if b.Max.Y > b.Min.Y {
+		o.Y /= (b.Max.Y - b.Min.Y)
+	}
+
+	if b.Max.Z > b.Min.Z {
+		o.Z /= (b.Max.Z - b.Min.Z)
+	}
+
+	return o
+}
+
+func (b Box) String() string {
+	return fmt.Sprintf("Box (%.2f,%.2f,%.2f) - (%.2f, %.2f, %.2f)", b.Min.X, b.Min.Y, b.Min.Z, b.Max.X, b.Max.Y, b.Max.Z)
 }

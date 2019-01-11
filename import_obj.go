@@ -29,7 +29,7 @@ func (o *ObjInfo) Dump() {
 var (
 	ReVertex       = regexp.MustCompile(`\s*v\s+(.+)\s+(.+)\s+([^\s]+)\s*`)
 	ReVertexNormal = regexp.MustCompile(`\s*vn\s+(.+)\s+(.+)\s+([^\s]+)\s*`)
-	RePolygon      = regexp.MustCompile(`\s*f(\s+\d+(/\d+/\d+)?){3,}\s*`)
+	RePolygon      = regexp.MustCompile(`\s*f(\s+\d+(/\d*/\d+)?){3,}\s*`)
 	ReGroup        = regexp.MustCompile(`g\s+(\w.*)`)
 	ReBlank        = regexp.MustCompile(`\s+`)
 )
@@ -51,7 +51,13 @@ func ParseWavefrontObj(rd io.Reader) *ObjInfo {
 	}
 
 	s2i := func(s string) int {
-		i, err := strconv.Atoi(strings.TrimSpace(s))
+		s = strings.TrimSpace(s)
+
+		if s == "" {
+			return 0
+		}
+
+		i, err := strconv.Atoi(s)
 
 		if err != nil {
 			panic(err)

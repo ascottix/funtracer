@@ -26,6 +26,18 @@ func PointAtInfinity(sign int) Tuple {
 	return Point(inf, inf, inf)
 }
 
+// CompByIdx allows to reference X, Y and Z by index, which is useful for example when building a BVH
+func (t Tuple) CompByIdx(idx int) float64 {
+	switch idx {
+	case 0:
+		return t.X
+	case 1:
+		return t.Y
+	default:
+		return t.Z
+	}
+}
+
 func (t Tuple) IsPoint() bool {
 	return t.W == 1
 }
@@ -67,10 +79,12 @@ func (t Tuple) Div(a float64) Tuple {
 }
 
 func (t Tuple) Length() float64 {
+	// Should be used only on vectors
 	return math.Sqrt(t.X*t.X + t.Y*t.Y + t.Z*t.Z)
 }
 
 func (t Tuple) Normalize() Tuple {
+	// Should be used only on vectors
 	return t.Div(t.Length())
 }
 

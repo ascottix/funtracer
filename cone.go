@@ -23,7 +23,9 @@ func NewInfiniteCone() *Shape {
 }
 
 func (p *Cone) Bounds() Box {
-	return Box{Point(-1, p.MinY, -1), Point(+1, p.MaxY, +1)}
+	maxr := math.Max(math.Abs(p.MinY), math.Abs(p.MaxY))
+
+	return Box{Point(-maxr, p.MinY, -maxr), Point(+maxr, p.MaxY, +maxr)}
 }
 
 func (p *Cone) LocalIntersect(ray Ray) (xs []float64) {
@@ -54,7 +56,7 @@ func (p *Cone) LocalIntersect(ray Ray) (xs []float64) {
 	} else {
 		// The ray is parallel to one of the cone halves, but may intersect the other
 		if math.Abs(b) > Epsilon {
-			t0 := -c / (2*b)
+			t0 := -c / (2 * b)
 
 			y0 := ray.Origin.Y + t0*ray.Direction.Y
 			if p.MinY < y0 && y0 < p.MaxY {

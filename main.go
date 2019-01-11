@@ -63,10 +63,10 @@ func main() {
 	start := time.Now()
 
 	if err == nil {
-		scene.SyncOptions(options)	// Sync options from outside with options from command line
+		scene.SyncOptions(options) // Sync options from outside with options from command line
 
 		fmt.Printf("Options: %+v\n", *options)
-	
+
 		fmt.Printf("Rendering '%s' into '%s'...", sceneFilename, options.OutFilename)
 
 		err = scene.World.RenderToPNG(scene.Camera, options.OutFilename)

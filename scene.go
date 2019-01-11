@@ -43,7 +43,7 @@ func (s *Scene) SyncOptions(options *Options) {
 	}
 
 	s.Camera.SetViewSize(w, h)
-	
+
 	options.OutWidth = w
 	options.OutHeight = h
 }

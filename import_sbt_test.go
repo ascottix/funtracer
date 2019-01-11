@@ -56,9 +56,9 @@ box {
 		t.Errorf("num of world object mismatch, found: %d", len(s.World.Objects))
 	}
 
-  s.Camera.SetViewSize(400, 400)
-  s.Camera.SetFieldOfView(0.5)
-  
+	s.Camera.SetViewSize(400, 400)
+	s.Camera.SetFieldOfView(0.5)
+
 	s.World.RenderToPNG(s.Camera, "test_sbt_box.png")
 }
 

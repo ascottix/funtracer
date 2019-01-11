@@ -22,8 +22,9 @@ type Groupable interface {
 type Group struct {
 	Namer
 	Grouper
-	members []Groupable
-	bbox    Box // Bounding box
+	members  []Groupable
+	bbox     Box // Bounding box
+	bvhNodes []BvhLinearNode
 }
 
 type Grouper struct {
@@ -112,16 +113,22 @@ func (g *Group) LocalIntersect(ray Ray) *Intersections { // Used only for testin
 }
 
 func (g *Group) AddIntersections(ray Ray, xs *Intersections) {
-	ray = ray.Transform(g.Tinverse)
+	if len(g.bvhNodes) > 0 {
+		// Intersect using the BVH
+		g.AddIntersectionsBvh(ray, xs)
+	} else {
+		// Standard intersection
+		ray = ray.Transform(g.Tinverse)
 
-	// Check hit against bounding box
-	if !g.bbox.Intersects(ray) {
-		return
-	}
+		// Check hit against bounding box
+		if !g.bbox.Intersects(ray) {
+			return
+		}
 
-	// Check against all children
-	for _, s := range g.members {
-		s.AddIntersections(ray, xs)
+		// Check against all children
+		for _, s := range g.members {
+			s.AddIntersections(ray, xs)
+		}
 	}
 }
 
