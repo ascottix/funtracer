@@ -346,7 +346,7 @@ translate( 0, 0.5, -1, scale(2.5,
 	if err == nil {
 		scene.World.RenderToPNG(scene.Camera, "test_sbt_cow.png")
 	} else {
-		t.Errorf("teapot scene failed: %s", err)
+		t.Errorf("cow scene failed: %s", err)
 	}
 }
 
