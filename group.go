@@ -5,7 +5,7 @@
 package main
 
 type Container interface {
-	WorldToObject(point Tuple) Tuple
+	Patternable
 	NormalToWorld(Tuple) Tuple
 }
 
@@ -93,9 +93,10 @@ func (g *Group) Add(elements ...Groupable) {
 }
 
 func (g *Group) SetMaterial(m *Material) {
+	// TODO: we should probably clone the material here
+	p := NewProxyPattern(g, m.Pattern)
+	m.SetPattern(p)
 	for _, s := range g.members {
-		p := NewProxyPattern(g, m.Pattern)
-		m.SetPattern(p)
 		s.SetMaterial(m)
 	}
 }

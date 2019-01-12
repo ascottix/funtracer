@@ -4,7 +4,7 @@
 
 package main
 
-// Note: this shape is not very efficient, a Trimesh is almost always a better choice
+// Note: creating a shape from this Shapable is not very efficient, a Trimesh is almost always a better choice
 
 // Triangle is defined by three points (not on the same line) in space
 type Triangle struct {

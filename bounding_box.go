@@ -52,6 +52,8 @@ func (b Box) Transform(m Matrix) Box {
 	return a
 }
 
+var _Debug = false 
+
 func (b Box) Intersects(ray Ray) bool {
 	ray.Direction.X = 1 / ray.Direction.X
 	ray.Direction.Y = 1 / ray.Direction.Y
@@ -104,7 +106,12 @@ func (b Box) IntersectsInvDir(ray Ray) bool {
 		tmax = ztmax
 	}
 
-	return tmin < tmax
+	if _Debug {
+		Debugln("xt=",xtmin, ",", xtmax, ", yt=", ytmin, ",", ytmax, "zt=", ztmin, ztmax)
+		Debugln("t=", tmin, tmax)
+	}
+
+	return tmin <= tmax
 }
 
 func (b Box) ToCube() *Shape {

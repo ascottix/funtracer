@@ -49,7 +49,7 @@ type BvhBucketInfo struct {
 
 const BvhMaxObjectsPerNode = 16
 
-const BvhNumBuckets = 12
+const BvhNumBuckets = 8
 
 const BvhBboxIntersectionCost = 0.3 // Relative to the cost of intersecting a primitive shape, which is set to 1 as a reference
 
@@ -81,9 +81,9 @@ func (g *Group) BuildBVH() {
 
 	totalNodes := 0
 
-	var bvhRecursiveBuild func(int, int) *BvhBuildNode
+	var bvhRecursiveBuild func(int, int, int) *BvhBuildNode
 
-	bvhRecursiveBuild = func(start, end int) *BvhBuildNode {
+	bvhRecursiveBuild = func(start, end, level int) *BvhBuildNode {
 		node := BvhBuildNode{}
 		totalNodes++
 
@@ -118,7 +118,10 @@ func (g *Group) BuildBVH() {
 
 			// Partition
 			mid := (start + end) / 2
-			if centroidBounds.Max.CompByIdx(dim) != centroidBounds.Min.CompByIdx(dim) {
+
+			// Debugln("INTERIOR start=",start, ",end=", end, "mid=", mid, ", dim=", dim, "d=", diagonal)
+
+			if !FloatEqual(centroidBounds.Max.CompByIdx(dim), centroidBounds.Min.CompByIdx(dim)) {
 				// Choose dim according to split method
 				switch method {
 				case BvhSplitMiddle:
@@ -243,8 +246,8 @@ func (g *Group) BuildBVH() {
 				// Build an interior node
 				if mid != end {
 					node.splitAxis = dim
-					node.child[0] = bvhRecursiveBuild(start, mid)
-					node.child[1] = bvhRecursiveBuild(mid, end)
+					node.child[0] = bvhRecursiveBuild(start, mid, level+1)
+					node.child[1] = bvhRecursiveBuild(mid, end, level+1)
 					node.bounds = node.child[0].bounds.Union(node.child[1].bounds)
 
 					return &node
@@ -256,6 +259,7 @@ func (g *Group) BuildBVH() {
 		// ...else there is only one object, so make it a leaf
 
 		// Leaf
+		// Debugln("LEAF")
 		node.bounds = bounds
 		node.objIdx = len(orderedObjects)
 		node.objCount = numObjects
@@ -266,7 +270,7 @@ func (g *Group) BuildBVH() {
 		return &node
 	}
 
-	root := bvhRecursiveBuild(0, len(objInfo))
+	root := bvhRecursiveBuild(0, len(objInfo), 0)
 
 	g.members = orderedObjects
 

@@ -13,17 +13,25 @@ import (
 	"strings"
 )
 
+type ObjInfoFace struct {
+	V	[3]int	// Indices in vertex array
+	VN	[3]int	// Indices in vertex normals array
+	G 	int		// Group
+}
+
+type ObjInfoGroup struct {
+	Name string
+}
+
 type ObjInfo struct {
 	Vertices  []Tuple
-	Triangles []*Triangle
 	VNormals  []Tuple
-	Faces     []TrimeshTriangleInfo
-	Groups    []*Group
-	Bounds    Box
+	F 		  []ObjInfoFace
+	Groups    []ObjInfoGroup
 }
 
 func (o *ObjInfo) Dump() {
-	Debugf("v=%d, vn=%d, f=%d, bbox=%+v\n", len(o.Vertices), len(o.VNormals), len(o.Faces), o.Bounds)
+	Debugf("v=%d, vn=%d, f=%d\n", len(o.Vertices), len(o.VNormals), len(o.F))
 }
 
 var (
@@ -37,8 +45,7 @@ var (
 func ParseWavefrontObj(rd io.Reader) *ObjInfo {
 	var info ObjInfo
 
-	info.Bounds = Box{PointAtInfinity(+1), PointAtInfinity(-1)}
-	info.Groups = []*Group{NewGroup()}
+	info.Groups = []ObjInfoGroup{ObjInfoGroup{Name:"default"}}
 
 	s2f := func(s string) float64 {
 		f, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
@@ -104,41 +111,28 @@ func ParseWavefrontObj(rd io.Reader) *ObjInfo {
 		// Polygon
 		s = RePolygon.FindStringSubmatch(line)
 		if s != nil {
-			vs := info.Vertices
-
 			v := ReBlank.Split(strings.TrimSpace(line), -1)
 			i1, _, n1 := f2cs(v[1])
 			for i := 3; i < len(v); i++ {
 				i2, _, n2 := f2cs(v[i-1])
 				i3, _, n3 := f2cs(v[i-0])
 
-				t := NewTriangle(vs[i1-1], vs[i2-1], vs[i3-1])
+				f := ObjInfoFace{
+					[3]int{i1-1, i2-1, i3-1},
+					[3]int{n1-1, n2-1, n3-1},
+					len(info.Groups)-1,
+				}
 
-				info.Triangles = append(info.Triangles, t)
-
-				info.Groups[len(info.Groups)-1].Add(NewShape("triangle", t))
-
-				face := TrimeshTriangleInfo{}
-				face.F[0].V = i1 - 1
-				face.F[1].V = i2 - 1
-				face.F[2].V = i3 - 1
-				face.F[0].VN = n1 - 1
-				face.F[1].VN = n2 - 1
-				face.F[2].VN = n3 - 1
-
-				info.Faces = append(info.Faces, face)
-
-				info.Bounds = info.Bounds.Union(t.Bounds())
+				info.F = append(info.F, f)
 			}
 		}
 
 		// Group
 		s = ReGroup.FindStringSubmatch(line)
 		if s != nil {
-			g := NewGroup()
-			g.SetName(strings.TrimSpace(s[1]))
-
-			info.Groups[0].Add(g)
+			g := ObjInfoGroup{
+				Name: strings.TrimSpace(s[1]),
+			}
 
 			info.Groups = append(info.Groups, g)
 		}
