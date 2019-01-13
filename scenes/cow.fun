@@ -8,7 +8,7 @@ camera {
   target = (0, 0.3, 0);
   updir = ( 0, 1, 0 );
   fovrad = 1;
-  viewsize = 400, 200;
+  viewsize = 800, 400;
 }
 
 ambient_light {
@@ -37,8 +37,8 @@ translate( 0, -1, 0,
 translate( 0, 0.5, -1, scale(2.5,
   group {
     polymesh {
+      gennormals = true;  // Generate vertex normals, this option must be declared before the OBJ file
       objfile = "cow.obj";
-      gennormals = true;
     }
   }
 ))

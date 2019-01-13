@@ -10,6 +10,7 @@ camera {
   target = (-0.6, 1, -0.8);
   updir = ( 0, 1, 0 );
   fovrad = 1.152;
+  viewsize = 800, 400;
 }
 
 ambient_light {

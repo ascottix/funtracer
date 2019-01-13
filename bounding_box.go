@@ -52,7 +52,7 @@ func (b Box) Transform(m Matrix) Box {
 	return a
 }
 
-var _Debug = false 
+var _Debug = false
 
 func (b Box) Intersects(ray Ray) bool {
 	ray.Direction.X = 1 / ray.Direction.X
@@ -107,7 +107,7 @@ func (b Box) IntersectsInvDir(ray Ray) bool {
 	}
 
 	if _Debug {
-		Debugln("xt=",xtmin, ",", xtmax, ", yt=", ytmin, ",", ytmax, "zt=", ztmin, ztmax)
+		Debugln("xt=", xtmin, ",", xtmax, ", yt=", ytmin, ",", ytmax, "zt=", ztmin, ztmax)
 		Debugln("t=", tmin, tmax)
 	}
 

@@ -43,10 +43,11 @@ func (p *Cube) LocalIntersect(ray Ray) []float64 {
 	ytmin, ytmax := checkAxis(ray.Origin.Y, ray.Direction.Y)
 	ztmin, ztmax := checkAxis(ray.Origin.Z, ray.Direction.Z)
 
+	// TODO: this does not always work, see Box
 	tmin := math.Max(xtmin, math.Max(ytmin, ztmin))
 	tmax := math.Min(xtmax, math.Min(ytmax, ztmax))
 
-	if tmin < tmax {
+	if tmin <= tmax {
 		return []float64{tmin, tmax}
 	}
 

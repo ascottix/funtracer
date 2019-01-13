@@ -7,7 +7,7 @@ camera {
   target = (0, 0, 0);
   updir = ( 0, 1, 0 );
   fovrad = 1;
-  viewsize = 400, 200;
+  viewsize = 800, 400;
 }
 
 ambient_light {
@@ -36,7 +36,7 @@ rotate_x( pi/2, translate( 0, 5, 0,
   }
 ))
 
-translate( 0, -1, 0,
+translate( 0, -1.12, 0,
   plane {
     name = "floor";
     material = "wall";

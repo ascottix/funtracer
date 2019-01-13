@@ -479,7 +479,8 @@ func ParseSbtScene(reader io.Reader, options *SbtParserOptions) (scene *Scene, e
 		g := NewGroup()
 		g.SetTransform(transform)
 
-		var mesh *Trimesh
+		autosmooth := false
+		var info *ObjInfo
 
 		match('{')
 		for !check("}") {
@@ -491,17 +492,22 @@ func ParseSbtScene(reader io.Reader, options *SbtParserOptions) (scene *Scene, e
 				if _, err := os.Stat(filename); os.IsNotExist(err) && options != nil {
 					filename = filepath.Join(options.FilenameBase, filename)
 				}
-				info := ParseWavefrontObjFromFile(filename)
+
+				info = ParseWavefrontObjFromFile(filename)
 				Debugf("%d triangles loaded from %q\n", len(info.F), filename)
-				mesh = NewTrimesh(info, -1)
-				mesh.Normalize()
+
+				info.Normalize()
+
+				if autosmooth {
+					info.Autosmooth()
+				}
+
+				mesh := NewTrimesh(info, -1)
 				mesh.AddToGroup(g)
 			case check("gennormals"):
 				match('=')
 				if check("true") {
-					if mesh != nil {
-						mesh.Autosmooth()
-					}
+					autosmooth = true
 				} else {
 					check("false")
 				}
@@ -511,7 +517,7 @@ func ParseSbtScene(reader io.Reader, options *SbtParserOptions) (scene *Scene, e
 			}
 		}
 
-		g.BuildBVH()	// For now, always build a BVH
+		g.BuildBVH() // For now, always build a BVH
 		add(g)
 	}
 

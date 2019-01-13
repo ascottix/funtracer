@@ -28,7 +28,7 @@ v 1 1 0
 	`
 	info := ParseWavefrontObjFromString(data)
 
-	v := info.Vertices
+	v := info.V
 
 	if len(v) != 4 || !v[0].Equals(Point(-1, 1, 0)) || !v[1].Equals(Point(-1, 0.5, 0)) || !v[2].Equals(Point(1, 0, 0)) || !v[3].Equals(Point(1, 1, 0)) {
 		t.Errorf("obj vertex failed")
@@ -55,7 +55,7 @@ f 1 3 4
 	t1 := info.F[0]
 	t2 := info.F[1]
 
-	if t1.V[0] != 0 || t1.V[1] != 1 || t1.V[2] != 2 || t2.V[0] != 0 || t2.V[1]!= 2 || t2.V[2]!= 3 {
+	if t1.V[0] != 0 || t1.V[1] != 1 || t1.V[2] != 2 || t2.V[0] != 0 || t2.V[1] != 2 || t2.V[2] != 3 {
 		t.Errorf("obj triangle vertices mismatch")
 	}
 }
@@ -80,7 +80,7 @@ f 1 2 3 4 5
 	t2 := info.F[1]
 	t3 := info.F[2]
 
-	if t1.V[0] != 0 || t1.V[1] != 1 || t1.V[2] != 2 || t2.V[0] != 0 || t2.V[1]!= 2 || t2.V[2]!= 3 || t3.V[0] != 0 || t3.V[1]!= 3 || t3.V[2]!= 4 {
+	if t1.V[0] != 0 || t1.V[1] != 1 || t1.V[2] != 2 || t2.V[0] != 0 || t2.V[1] != 2 || t2.V[2] != 3 || t3.V[0] != 0 || t3.V[1] != 3 || t3.V[2] != 4 {
 		t.Errorf("obj polygon vertices mismatch")
 	}
 }
@@ -106,7 +106,7 @@ f 1 4 5
 
 func TestObjDodecahedron(t *testing.T) {
 	TestWithImage(t)
-	
+
 	data := `
 v  -0.57735  -0.57735  0.57735
 v  0.934172  0.356822  0
@@ -168,16 +168,16 @@ f  19  12  11
 	`
 
 	info := ParseWavefrontObjFromString(data)
+	info.Normalize()
 
 	world := NewWorld()
 
-	world.AddLights(NewPointLight(Point(-2,8,-9), White))
+	world.AddLights(NewPointLight(Point(-2, 8, -9), White))
 
 	mesh := NewTrimesh(info, -1)
-	mesh.Normalize()
 
 	group := NewGroup()
-	
+
 	mesh.AddToGroup(group)
 
 	group.BuildBVH()
@@ -199,19 +199,20 @@ func TestObjTeapot(t *testing.T) {
 
 	world.Ambient = Gray(0.5)
 
-	world.AddLights(NewPointLight(Point(-5,10,-5), Gray(0.9)))
+	world.AddLights(NewPointLight(Point(-5, 10, -5), Gray(0.9)))
+
+	info.Normalize()
 
 	mesh := NewTrimesh(info, -1)
-	mesh.Normalize()
 
 	group := NewGroup()
 	group.SetTransform(RotationX(-Pi/2), Scaling(3, 3, 4), Translation(0, 0, 0.12))
 	m := NewMaterial()
-	m.SetPattern(NewSolidColorPattern(RGB(0.87,0.87,0.9)))
+	m.SetPattern(NewSolidColorPattern(RGB(0.87, 0.87, 0.9)))
 	m.SetReflect(0.3, White)
 	m.SetDiffuse(1)
 	m.SetShininess(256)
-	
+
 	mesh.SetMaterial(m)
 	mesh.AddToGroup(group)
 
@@ -225,7 +226,7 @@ func TestObjTeapot(t *testing.T) {
 	x.SetPattern(p)
 	x.SetSpecular(0)
 
-  	wall := NewPlane()
+	wall := NewPlane()
 	wall.SetTransform(RotationX(Pi/2), Translation(0, 5, 0))
 	wall.SetMaterial(x)
 

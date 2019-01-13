@@ -13,17 +13,17 @@ type Trimesh struct {
 	Grouper
 	V        []Tuple // Vertices
 	VN       []Tuple // Vertex normals
-	T		 []MeshTriangle
+	T        []MeshTriangle
 	material *Material // TODO! Handling of material needs to be refactored
 }
 
 type MeshTriangle struct {
-	mesh	*Trimesh
-	V  [3]int // Vertex indices
-	VN [3]int // Vertex normals
-	E1 Tuple  // Edges
-	E2 Tuple
-	N  Tuple // Normal
+	mesh *Trimesh
+	V    [3]int // Vertex indices
+	VN   [3]int // Vertex normals
+	E1   Tuple  // Edges
+	E2   Tuple
+	N    Tuple // Normal
 }
 
 func NewTrimesh(info *ObjInfo, group int) *Trimesh {
@@ -34,8 +34,8 @@ func NewTrimesh(info *ObjInfo, group int) *Trimesh {
 	mesh.SetNameForKind("mesh")
 	mesh.SetTransform()
 
-	mesh.V = info.Vertices
-	mesh.VN = info.VNormals
+	mesh.V = info.V
+	mesh.VN = info.VN
 
 	for _, f := range info.F {
 		if group == -1 || f.G == group {
@@ -70,73 +70,9 @@ func (s *Trimesh) SetMaterial(m *Material) {
 	s.material = m
 }
 
-// Normalize fits the entire shape into a (-1,-1,-1) to (+1,+1,+1) box
-func (s *Trimesh) Normalize() {
-	bbox := NewBox(PointAtInfinity(+1), PointAtInfinity(-1))
-
-	for i, _ := range s.T {
-		bbox = bbox.Union( s.T[i].Bounds() )
-	}
-
-	sx := bbox.Max.X - bbox.Min.X
-	sy := bbox.Max.Y - bbox.Min.Y
-	sz := bbox.Max.Z - bbox.Min.Z
-
-	scale := Max3(sx, sy, sz) / 2
-
-	for i, v := range s.V {
-		cx := bbox.Min.X + sx/2
-		cy := bbox.Min.Y + sy/2
-		cz := bbox.Min.Z + sz/2
-
-		x := v.X - cx
-		y := v.Y - cy
-		z := v.Z - cz
-
-		x /= scale
-		y /= scale
-		z /= scale
-
-		s.V[i] = Point(x, y, z)
-	}
-
-	for i, _ := range s.T {
-		p1 := s.V[s.T[i].V[0]]
-		s.T[i].E1 = s.V[s.T[i].V[1]].Sub(p1)
-		s.T[i].E2 = s.V[s.T[i].V[2]].Sub(p1)
-	}
-}
-
-// Autosmooth recomputes all normals at vertices
-func (s *Trimesh) Autosmooth() {
-	s.VN = make([]Tuple, len(s.V))
-
-	for i, _ := range s.V {
-		n := Vector(0, 0, 0)
-		c := 0.0
-
-		for j, f := range s.T {
-			if f.V[0] == i || f.V[1] == i || f.V[2] == i {
-				n = n.Add(f.N)
-				c++
-			}
-
-			s.T[j].VN[0] = s.T[j].V[0]
-			s.T[j].VN[1] = s.T[j].V[1]
-			s.T[j].VN[2] = s.T[j].V[2]
-		}
-
-		if c > 0 {
-			n = n.Mul(1 / c)
-		}
-
-		s.VN[i] = n
-	}
-}
-
 func (s *Trimesh) AddToGroup(group *Group) {
 	for i := range s.T {
-		group.Add( &(s.T[i]) )
+		group.Add(&(s.T[i]))
 	}
 }
 
@@ -160,9 +96,9 @@ func (t *MeshTriangle) Clone() Groupable {
 }
 
 func (t *MeshTriangle) Bounds() Box {
-	p1 := t.mesh.V[ t.V[0] ]
-	p2 := t.mesh.V[ t.V[1] ]
-	p3 := t.mesh.V[ t.V[2] ]
+	p1 := t.mesh.V[t.V[0]]
+	p2 := t.mesh.V[t.V[1]]
+	p3 := t.mesh.V[t.V[2]]
 	return Box{
 		Point(Min3(p1.X, p2.X, p3.X), Min3(p1.Y, p2.Y, p3.Y), Min3(p1.Z, p2.Z, p3.Z)),
 		Point(Max3(p1.X, p2.X, p3.X), Max3(p1.Y, p2.Y, p3.Y), Max3(p1.Z, p2.Z, p3.Z)),
@@ -179,7 +115,7 @@ func (t *MeshTriangle) SetMaterial(m *Material) {
 }
 
 func (t *MeshTriangle) Name() string {
-	// Let's make a name for debugging	
+	// Let's make a name for debugging
 	return fmt.Sprintf("%s_t_%d_%d_%d", t.mesh.Name(), t.V[0], t.V[1], t.V[2])
 }
 
@@ -187,7 +123,7 @@ func (t *MeshTriangle) Name() string {
 func (t *MeshTriangle) SetName(name string) {
 }
 
-func (t *MeshTriangle)Parent() Container {
+func (t *MeshTriangle) Parent() Container {
 	return t.mesh.Parent()
 }
 
@@ -205,7 +141,7 @@ func (t *MeshTriangle) AddIntersections(ray Ray, xs *Intersections) {
 	}
 
 	f := 1.0 / det
-	p1 := t.mesh.V[ t.V[0] ]
+	p1 := t.mesh.V[t.V[0]]
 	p1ToOrigin := ray.Origin.Sub(p1)
 	u := f * p1ToOrigin.DotProduct(dirCrossE2)
 
