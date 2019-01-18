@@ -4,6 +4,10 @@ A simple raytracer in Go.
 
 Funtracer is based on [The Ray Tracer Challenge](https://pragprog.com/book/jbtracer/the-ray-tracer-challenge "The Ray Tracer Challenge") book by Jamis Buck.
 
+Now (slowly) following the [Physically Based Rendering](http://www.pbr-book.org/ "Physically Based Rendering") book by Matt Pharr, Wenzel Jacob and Greg Humphreys.
+
+![Stanford Dragon](https://ascottix.github.io/funtracer/dragon.png)
+
 ## Features
 
 The main goal of Funtracer is to have fun and learn Go with a project that can offer interesting and sometimes difficult challenges but nice rewards too.
@@ -13,7 +17,7 @@ So far it has worked really well (the way the book is designed helps a lot) and 
 - Basic shapes: cone, cube, cylinder, plane, sphere, triangle meshes
 - Groups
 - Constructive Solid Geometry (CSG)
-- Bounding Volume Hierarchies (BVH)
+- Bounding Volume Hierarchies (BVH) with Surface Area Heuristic (SAH)
 - Color patterns
 - Lights: directional, point, spot
 - Import .fun, .ray and .obj files
