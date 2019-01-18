@@ -197,9 +197,9 @@ func TestObjTeapot(t *testing.T) {
 
 	world := NewWorld()
 
-	world.Ambient = Gray(0.5)
+	world.Ambient = Gray(0.2)
 
-	world.AddLights(NewPointLight(Point(-5, 10, -5), Gray(0.9)))
+	world.AddLights(NewSpotLight(Point(-10, 20, -10), Point(0, 0, 0), 0.1, 0.2, Gray(0.7)))
 
 	info.Normalize()
 
@@ -212,8 +212,26 @@ func TestObjTeapot(t *testing.T) {
 	m.SetReflect(0.3, White)
 	m.SetDiffuse(1)
 	m.SetShininess(256)
+	mesh.SetMaterial(m)
+
+	/* Interesting parameters for the Stanford Dragon */
+	/*
+		m := NewMaterial()
+		m.SetPattern(JadePattern())
+		m.SetAmbient(0.2)
+		m.Pattern.SetTransform(Scaling(0.3, 0.3, 0.3))
+		m.SetReflect(0.1, White)
+		m.SetDiffuse(1)
+		m.SetShininess(10)
+
+		group.SetTransform(Scaling(2), Translation(0, 0.2, 0))
+
+		camera := NewCamera(300*4, 200*4, 0.6)
+		camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(0, 0.3, 0), Vector(0, 1, 0)))
+	*/
 
 	mesh.SetMaterial(m)
+
 	mesh.AddToGroup(group)
 
 	group.BuildBVH()

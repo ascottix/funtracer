@@ -89,39 +89,43 @@ func (o *ObjInfo) Normalize() {
 
 // Autosmooth sets all vertex normals to the average of the normals of the adjacent triangles
 func (o *ObjInfo) Autosmooth() {
-	o.VN = make([]Tuple, len(o.V))
+   o.VN = make([]Tuple, len(o.V))
+   c := make([]int, len(o.V))
 
-	for i, _ := range o.V {
-		n := Vector(0, 0, 0)
-		c := 0.0
+   for j, _ := range o.F {
+       v0 := o.F[j].V[0]
+       v1 := o.F[j].V[1]
+       v2 := o.F[j].V[2]
+      
+       // Compute face normal
+       p0 := o.V[v0]
+       p1 := o.V[v1]
+       p2 := o.V[v2]
+       e1 := p1.Sub(p0)
+       e2 := p2.Sub(p0)
+       fn := e2.CrossProduct(e1).Normalize()
 
-		for j, f := range o.F {
-			if f.V[0] == i || f.V[1] == i || f.V[2] == i {
-				// Compute face normal
-				p0 := o.V[f.V[0]]
-				p1 := o.V[f.V[1]]
-				p2 := o.V[f.V[2]]
-				e1 := p1.Sub(p0)
-				e2 := p2.Sub(p0)
-				fn := e2.CrossProduct(e1).Normalize()
+       // Add to vertex normals
+       o.VN[v0] = o.VN[v0].Add(fn)
+       o.VN[v1] = o.VN[v1].Add(fn)
+       o.VN[v2] = o.VN[v2].Add(fn)
 
-				// Add to total
-				n = n.Add(fn)
-				c++
-			}
+       c[v0]++
+       c[v1]++
+       c[v2]++
 
-			// Update face information
-			o.F[j].VN[0] = f.V[0]
-			o.F[j].VN[1] = f.V[1]
-			o.F[j].VN[2] = f.V[2]
-		}
+       // Update face information
+       o.F[j].VN[0] = v0
+       o.F[j].VN[1] = v1
+       o.F[j].VN[2] = v2
+   }
 
-		if c > 0 {
-			n = n.Mul(1 / c)
-		}
-
-		o.VN[i] = n
-	}
+    for i, _ := range o.V {
+       n := c[i]
+       if n > 0 {
+           o.VN[i] = o.VN[i].Mul( 1 / float64(n) )
+       }
+    }
 }
 
 func (o *ObjInfo) Dump() {
