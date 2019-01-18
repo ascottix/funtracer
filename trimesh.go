@@ -135,8 +135,10 @@ func (t *MeshTriangle) AddIntersections(ray Ray, xs *Intersections) {
 	dirCrossE2 := ray.Direction.CrossProduct(t.E2)
 	det := t.E1.DotProduct(dirCrossE2)
 
+	const E = 1e-9 // We need higher precision than usual here for models with many small triangles
+
 	// Check if ray is parallel to triangle plane
-	if det > -Epsilon && det < +Epsilon {
+	if det > -E && det < +E {
 		return
 	}
 
