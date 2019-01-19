@@ -114,14 +114,12 @@ type XYC struct {
 	c Color
 }
 
-func getPixelOffsetGenerator(random bool) (g FloatGenerator) {
-	if random {
-		g = NewRandomGenerator(1)
-	} else {
-		g = NewConstGenerator(0.5)
+func (w *World) getPixelSampler(jitterId int) Sampler2d {
+	if w.Options.Supersampling == 1 {
+		return NewStratified2d(1, 1)
 	}
 
-	return g
+	return NewJitteredStratified2d(w.Options.Supersampling, w.Options.Supersampling, 13+int64(jitterId)*7)
 }
 
 func (w *World) GoDivisionRenderToCanvas(goers int, camera *Camera) Canvas {
@@ -129,46 +127,54 @@ func (w *World) GoDivisionRenderToCanvas(goers int, camera *Camera) Canvas {
 
 	canvas := NewCanvas(camera.HSize, camera.VSize)
 
+	samplesPerPixel := w.Options.Supersampling * w.Options.Supersampling
+
 	renderer := func(m, r int) {
+		defer wg.Done()
+
 		rt := NewRaytracer(w)
 
-		offset := getPixelOffsetGenerator(w.Options.SamplesPerPixel > 1)
+		sampler := w.getPixelSampler(r)
 
 		for y := 0; y < camera.VSize; y++ {
 			for x := r; x < camera.HSize; x += m {
-				for s := 0; s < w.Options.SamplesPerPixel; s++ {
-					px := float64(x) + offset()
-					py := float64(y) + offset()
+				sampler.Reset()
+				for s := 0; s < samplesPerPixel; s++ {
+					px, py := sampler.Next()
+					px += float64(x)
+					py += float64(y)
 					ray := camera.RayForPixelF(px, py)
 					col := rt.ColorAt(ray)
 					canvas.AddPixelAt(px, py, col)
 				}
 			}
 		}
-
-		wg.Done()
 	}
 
+	wg.Add(goers)
 	for i := 0; i < goers; i++ {
-		wg.Add(1)
 		go renderer(goers, i)
 	}
 
 	wg.Wait()
 
-	canvas.Mul(1.0 / float64(w.Options.SamplesPerPixel))
+	canvas.Mul(1.0 / float64(samplesPerPixel))
 
 	return canvas
 }
 
 func (w *World) GoPipelineRenderToCanvas(goers int, camera *Camera) Canvas {
-	rasterizer := func(out chan XY) {
-		offset := getPixelOffsetGenerator(w.Options.SamplesPerPixel > 1)
+	samplesPerPixel := w.Options.Supersampling * w.Options.Supersampling
+
+	sampler := func(out chan XY) {
+		js2d := w.getPixelSampler(0)
 
 		for y := 0; y < camera.VSize; y++ {
 			for x := 0; x < camera.HSize; x++ {
-				for s := 0; s < w.Options.SamplesPerPixel; s++ {
-					out <- XY{float64(x) + offset(), float64(y) + offset()}
+				js2d.Reset()
+				for s := 0; s < samplesPerPixel; s++ {
+					px, py := js2d.Next()
+					out <- XY{float64(x) + px, float64(y) + py}
 				}
 			}
 		}
@@ -182,6 +188,8 @@ func (w *World) GoPipelineRenderToCanvas(goers int, camera *Camera) Canvas {
 		for i := 0; i < goers; i++ {
 			wg.Add(1)
 			go func() {
+				defer wg.Done()
+
 				rt := NewRaytracer(w)
 
 				for xy := range in {
@@ -189,7 +197,6 @@ func (w *World) GoPipelineRenderToCanvas(goers int, camera *Camera) Canvas {
 					col := rt.ColorAt(ray)
 					out <- XYC{xy, col}
 				}
-				wg.Done()
 			}()
 		}
 
@@ -204,16 +211,16 @@ func (w *World) GoPipelineRenderToCanvas(goers int, camera *Camera) Canvas {
 			cvs.AddPixelAt(xyc.x, xyc.y, xyc.c)
 		}
 
-		cvs.Mul(1.0 / float64(w.Options.SamplesPerPixel))
+		cvs.Mul(1.0 / float64(samplesPerPixel))
 
 		out <- cvs
 	}
 
-	cxy := make(chan XY, 8)
-	cpix := make(chan XYC, 8)
-	cimg := make(chan Canvas)
+	cxy := make(chan XY, 8)   // sampler -> (x,y) coordinates of point where pixel is sampled
+	cpix := make(chan XYC, 8) // (x,y) -> renderers -> (x,y,color of sampled point)
+	cimg := make(chan Canvas) // (x,y,color) -> image
 
-	go rasterizer(cxy)
+	go sampler(cxy)
 
 	go renderer(cxy, cpix)
 

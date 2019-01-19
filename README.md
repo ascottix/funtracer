@@ -17,11 +17,11 @@ So far it has worked really well (the way the book is designed helps a lot) and 
 - Basic shapes: cone, cube, cylinder, plane, sphere, triangle meshes
 - Groups
 - Constructive Solid Geometry (CSG)
-- Bounding Volume Hierarchies (BVH) with Surface Area Heuristic (SAH)
+- Bounding Volume Hierarchies (BVH) with the Surface Area Heuristic (SAH)
 - Color patterns
 - Lights: directional, point, spot
 - Import .fun, .ray and .obj files
-- Multi-threading
+- Parallel rendering
 
 ## How to build
 
@@ -47,9 +47,11 @@ The directory `scenes` contains several scene file to try. Try for example:
 
 `./funtracer scenes/teapot`
 
-or if you can wait a few minutes go for a larger picture with antialiasing:
+or if you can wait a bit more add supersampling:
 
-`./funtracer -ow 800 -oh 400 -ss 16 scenes/teapot`
+`./funtracer -ss 4 scenes/teapot`
+
+The `-ss 4` option renders the scene 16 times, sampling each pixel at a slightly different position every time. This helps reduce aliasing and other visual artifacts.
 
 Options may also be specified in a `config.json` file, for example:
 
