@@ -53,5 +53,5 @@ func NewStratified2d(sx, sy int) *Combined1d1d {
 func NewJitteredStratified2d(sx, sy int, seed int64) *Combined1d1d {
 	return NewCombined1d1d(sx, sy,
 		NewJittered1d(NewStratified1d(sx), 1/float64(sx), seed*97),
-		NewJittered1d(NewStratified1d(sx), 1/float64(sy), seed*115))
+		NewJittered1d(NewStratified1d(sy), 1/float64(sy), seed*115))
 }
