@@ -28,12 +28,14 @@ func MatMatte(c Color) *Material {
 }
 
 func MatGlass() *Material {
-	return NewMaterial().
-		SetReflective(0.05).
-		SetRefractive(0.95, 1.5)
+	return MatColoredGlass(White)
 }
 
 func MatColoredGlass(c Color) *Material {
-	return MatGlass().
-		SetPattern(NewSolidColorPattern(c))
+	return NewMaterial().
+		SetAmbient(0).
+		SetDiffuse(0).
+		SetReflect(0.05, White).
+		SetRefract(0.95, c).
+		SetIor(1.52)
 }
