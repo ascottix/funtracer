@@ -6,17 +6,18 @@ package main
 
 type Material struct {
 	Pattern      Pattern
-	Ambient      float64
-	Diffuse      float64
+	Ambient      float64	// Ka
+	Diffuse      float64	// Kd
+	Roughness    float64	// Diffuse roughness (i.e. sigma in the Oren-Nayar model)
 	Specular     float64
-	Shininess    float64
-	ReflectLevel float64
+	Shininess    float64	// Ns, specular exponent
+	Reflect      Color
+	Refract      Color
+	Ior          float64 	// Ni, index of refraction
 	ReflectColor Color
-	Reflect      Color // Reflect color scaled by level
-	RefractLevel float64
+	ReflectLevel float64
 	RefractColor Color
-	Refract      Color   // Refract color scaled by level
-	Ior          float64 // Index of refraction
+	RefractLevel float64
 }
 
 func NewMaterial() *Material {
