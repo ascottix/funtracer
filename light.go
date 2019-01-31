@@ -9,7 +9,7 @@ import (
 )
 
 type Light interface {
-	Lighten(objectColor Color, object Hittable, point, eyev, normalv Tuple, shadowed bool) Color
+	LightenHit(objectColor Color, ii *IntersectionInfo, shadowed bool) Color
 	IsShadowed(rt *Raytracer, point Tuple) bool
 }
 
@@ -77,40 +77,47 @@ func OrenNayar(eyev, lightv, normalv Tuple, sigma float64) float64 {
 // LightenHit computes the color of a point on a surface, for a specified light.
 // It uses the Oren-Nayar model for diffuse and the Blinn-Phong model for specular
 // (ambient contribution is computed elsewhere).
-func LightenHit(lightv Tuple, lightIntensity Color, objectColor Color, object Hittable, point, eyev, normalv Tuple) (result Color) {
-	if cosTheta := lightv.DotProduct(normalv); cosTheta >= 0 { // Cosine of angle between light vector and surface normal
-		// Light is on the same side of the surface, need to compute diffuse and specular
-		material := object.Material()
+func LightenHit(lightv Tuple, lightIntensity Color, objectColor Color, ii *IntersectionInfo) (result Color) {
+	if cosTheta := lightv.DotProduct(ii.Normalv); cosTheta >= 0 { // Cosine of angle between light vector and surface normal
+		// Light is on the same side of the surface, need to compute both diffuse and specular
+		material := ii.O.Material()
 		effectiveColor := objectColor.Blend(lightIntensity) // Combine light and surface colors
 
 		// The energy of the light hitting the surface depends on the cosine of the angle
 		// between the light incident direction and the surface normal (Lambert's cosine law)
-		result = result.Add(effectiveColor.Mul(material.Diffuse * cosTheta * OrenNayar(eyev, lightv, normalv, material.Roughness)))
+		result = result.Add(effectiveColor.Mul(material.Diffuse * cosTheta * OrenNayar(ii.Eyev, lightv, ii.Normalv, material.Roughness)))
 
 		// The Blinn-Phong model accounts for light that may be reflected directly towards the eye,
 		// controlled by Specular (intensity of reflected light) and Shininess
 		// (size of reflecting area, higher values yield a smaller area with harder reflection)
-		halfv := lightv.Add(eyev).Normalize()	// Half-vector, this would be reflectv := lightv.Neg().Reflect(normalv) in the standard Phong model
+		halfv := lightv.Add(ii.Eyev).Normalize() // Half-vector, this would be reflectv := lightv.Neg().Reflect(normalv) in the standard Phong model
 
-        if nDotH := normalv.DotProduct(halfv); nDotH > 0 { // Would be reflectv.DotProduct(eyev) in the standard Phong model
-			f := math.Pow(nDotH, material.Shininess * 4) // Multiply by 4 to keep "compatibility" with values tuned for the standard Phong model
+		if nDotH := ii.Normalv.DotProduct(halfv); nDotH > 0 { // Would be reflectv.DotProduct(eyev) in the standard Phong model
+			f := math.Pow(nDotH, material.Shininess*4)                     // Multiply by 4 to keep "compatibility" with values tuned for the standard Phong model
 			result = result.Add(lightIntensity.Mul(material.Specular * f)) // Add specular component
 		}
 		// ...else specular is black
 	}
 	// ...else light is on the other side of the surface: diffuse and specular are both black
 
-	return
+	return result
+}
+
+// Lighten is used only for tests, it builds a dummy IntersectionInfo object then calls LightenHit to get the color
+func Lighten(light Light, objectColor Color, object Hittable, point, eyev, normalv Tuple, shadowed bool) Color {
+	ii := IntersectionInfo{Intersection: Intersection{O: object}, Point: point, Eyev: eyev, Normalv: normalv}
+
+	return light.LightenHit(objectColor, &ii, shadowed)
 }
 
 func NewPointLight(pos Tuple, intensity Color) *PointLight {
 	return &PointLight{pos, intensity}
 }
 
-func (light *PointLight) Lighten(objectColor Color, object Hittable, point, eyev, normalv Tuple, shadowed bool) (result Color) {
+func (light *PointLight) LightenHit(objectColor Color, ii *IntersectionInfo, shadowed bool) (result Color) {
 	if !shadowed {
-		lightv := light.Pos.Sub(point).Normalize() // Direction to the light source
-		result = LightenHit(lightv, light.Intensity, objectColor, object, point, eyev, normalv)
+		lightv := light.Pos.Sub(ii.Point).Normalize() // Direction to the light source
+		result = LightenHit(lightv, light.Intensity, objectColor, ii)
 	}
 
 	return
@@ -132,9 +139,9 @@ func (light *DirectionalLight) IsShadowed(rt *Raytracer, point Tuple) bool {
 	return hit.Valid()
 }
 
-func (light *DirectionalLight) Lighten(objectColor Color, object Hittable, point, eyev, normalv Tuple, shadowed bool) (result Color) {
+func (light *DirectionalLight) LightenHit(objectColor Color, ii *IntersectionInfo, shadowed bool) (result Color) {
 	if !shadowed {
-		result = LightenHit(light.Dir, light.Intensity, objectColor, object, point, eyev, normalv)
+		result = LightenHit(light.Dir, light.Intensity, objectColor, ii)
 	}
 
 	return
@@ -144,9 +151,9 @@ func NewSpotLight(pos, target Tuple, angleMin, angleMax float64, intensity Color
 	return &SpotLight{pos, target.Sub(pos).Normalize(), angleMin, angleMax, intensity}
 }
 
-func (light *SpotLight) Lighten(objectColor Color, object Hittable, point, eyev, normalv Tuple, shadowed bool) (result Color) {
+func (light *SpotLight) LightenHit(objectColor Color, ii *IntersectionInfo, shadowed bool) (result Color) {
 	if !shadowed {
-		lightv := light.Pos.Sub(point).Normalize() // Direction to the light source
+		lightv := light.Pos.Sub(ii.Point).Normalize() // Direction to the light source
 
 		cosSpotAngle := lightv.Neg().DotProduct(light.Dir)
 		spotAngle := math.Acos(cosSpotAngle)
@@ -163,7 +170,7 @@ func (light *SpotLight) Lighten(objectColor Color, object Hittable, point, eyev,
 				intensity = sqt / (2*(sqt-t) + 1)
 			}
 
-			result = LightenHit(lightv, light.Intensity.Mul(intensity), objectColor, object, point, eyev, normalv)
+			result = LightenHit(lightv, light.Intensity.Mul(intensity), objectColor, ii)
 		}
 	}
 

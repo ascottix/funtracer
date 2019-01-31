@@ -43,7 +43,7 @@ func (rt *Raytracer) ShadeHit(ii *IntersectionInfo, depth int) (c Color) {
 	c = objectColor.Blend(rt.world.Ambient.Mul(material.Ambient))
 
 	for _, light := range rt.world.Lights {
-		c = c.Add(light.Lighten(objectColor, ii.O, ii.Point, ii.Eyev, ii.Normalv, light.IsShadowed(rt, ii.OverPoint)))
+		c = c.Add(light.LightenHit(objectColor, ii, light.IsShadowed(rt, ii.OverPoint)))
 	}
 
 	m := ii.O.Material()
