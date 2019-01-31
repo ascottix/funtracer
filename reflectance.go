@@ -40,7 +40,7 @@ func FresnelReflectance(ii *IntersectionInfo) float64 {
 		etai, etat = etat, etai
 	}
 
-	// Compute sini using Snell's law
+	// Compute sint using Snell's law
 	sint := etai / etat * math.Sqrt(1-cosi*cosi)
 
 	if sint >= 1 {
