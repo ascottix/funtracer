@@ -13,17 +13,19 @@ import (
 	"strings"
 )
 
+// See:
+// https://en.wikipedia.org/wiki/Wavefront_.obj_file
+// https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/27982/versions/5/previews/help%20file%20format/MTL_format.html
 type ObjMaterial struct {
-	Name  string
-	Ka    Color   // Ambient
-	Kd    Color   // Diffuse
-	Ke    Color   // ???
-	Ks    Color   // Specular
-	Tr    float64 // Transparency
-	Ni    float64 // ???
-	Ns    float64 // Shininess
-	Illum int     // Illumination model (1=flat, 2=specular)
-	MapKa string  // Texture map filename
+	Name string
+	Ka   Color   // Ambient
+	Kd   Color   // Diffuse
+	Ke   Color   // Emissive
+	Ks   Color   // Specular
+	Ns   float64 // Specular exponent (typically from 0 to 1000)
+	Tf   Color   // Transmission filter
+	Tr   float64 // Transparency (can be also specified with 'd' i.e. "dissolve", then Tr=1-d)
+	Ni   float64 // Index of refraction
 }
 
 type ObjInfoFace struct {
@@ -89,43 +91,43 @@ func (o *ObjInfo) Normalize() {
 
 // Autosmooth sets all vertex normals to the average of the normals of the adjacent triangles
 func (o *ObjInfo) Autosmooth() {
-   o.VN = make([]Tuple, len(o.V))
-   c := make([]int, len(o.V))
+	o.VN = make([]Tuple, len(o.V))
+	c := make([]int, len(o.V))
 
-   for j, _ := range o.F {
-       v0 := o.F[j].V[0]
-       v1 := o.F[j].V[1]
-       v2 := o.F[j].V[2]
-      
-       // Compute face normal
-       p0 := o.V[v0]
-       p1 := o.V[v1]
-       p2 := o.V[v2]
-       e1 := p1.Sub(p0)
-       e2 := p2.Sub(p0)
-       fn := e2.CrossProduct(e1).Normalize()
+	for j, _ := range o.F {
+		v0 := o.F[j].V[0]
+		v1 := o.F[j].V[1]
+		v2 := o.F[j].V[2]
 
-       // Add to vertex normals
-       o.VN[v0] = o.VN[v0].Add(fn)
-       o.VN[v1] = o.VN[v1].Add(fn)
-       o.VN[v2] = o.VN[v2].Add(fn)
+		// Compute face normal
+		p0 := o.V[v0]
+		p1 := o.V[v1]
+		p2 := o.V[v2]
+		e1 := p1.Sub(p0)
+		e2 := p2.Sub(p0)
+		fn := e2.CrossProduct(e1).Normalize()
 
-       c[v0]++
-       c[v1]++
-       c[v2]++
+		// Add to vertex normals
+		o.VN[v0] = o.VN[v0].Add(fn)
+		o.VN[v1] = o.VN[v1].Add(fn)
+		o.VN[v2] = o.VN[v2].Add(fn)
 
-       // Update face information
-       o.F[j].VN[0] = v0
-       o.F[j].VN[1] = v1
-       o.F[j].VN[2] = v2
-   }
+		c[v0]++
+		c[v1]++
+		c[v2]++
 
-    for i, _ := range o.V {
-       n := c[i]
-       if n > 0 {
-           o.VN[i] = o.VN[i].Mul( 1 / float64(n) )
-       }
-    }
+		// Update face information
+		o.F[j].VN[0] = v0
+		o.F[j].VN[1] = v1
+		o.F[j].VN[2] = v2
+	}
+
+	for i, _ := range o.V {
+		n := c[i]
+		if n > 0 {
+			o.VN[i] = o.VN[i].Mul(1 / float64(n))
+		}
+	}
 }
 
 func (o *ObjInfo) Dump() {
