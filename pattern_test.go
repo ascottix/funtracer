@@ -96,8 +96,6 @@ func TestPatternScene(t *testing.T) {
 
 	light1 := NewPointLight(Point(-10, 10, -10), RGB(0.8, 0.8, 0.8))
 
-	//light1 := NewSpotLight(Point(-10, 10, -10), Point(-1,0,1).Sub(Point(-10,10,-10)), 0.3, 0.4, RGB(0.8,0.8,0.8))
-
 	light2 := NewDirectionalLight(Vector(0, -1, 0), RGB(0.2, 0.2, 0.2))
 
 	world.AddObjects(floor, wall)
