@@ -104,11 +104,11 @@ func LightenHit(lightv Tuple, lightIntensity Color, ii *IntersectionInfo) (resul
 }
 
 // Lighten is used only for tests, it builds a dummy IntersectionInfo object then calls LightenHit to get the color
-func Lighten(light Light, objectColor Color, object Hittable, point, eyev, normalv Tuple, shadowed bool) Color {
+func Lighten(light Light, object Hittable, point, eyev, normalv Tuple, shadowed bool) (Color, Color) {
 	ii := IntersectionInfo{Intersection: Intersection{O: object}, Point: point, Eyev: eyev, Normalv: normalv}
-	ii.Mat.DiffuseColor = objectColor
+	object.Material().GetParamsAt(&ii)
 
-	return light.LightenHit(&ii, shadowed)
+	return light.LightenHit(&ii, shadowed), ii.Mat.DiffuseColor
 }
 
 func NewPointLight(pos Tuple, intensity Color) *PointLight {

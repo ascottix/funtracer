@@ -140,7 +140,7 @@ func (g *Group) Bounds() Box {
 func (g *Group) BoundingBox() *Shape {
 	bb := g.Bounds().ToCube()
 
-	bb.Material().SetPattern(NewSolidColorPattern(RGB(0.5, 0.5, 0))).SetRefractive(1, 1)
+	bb.Material().SetDiffuseColor(RGB(0.5, 0.5, 0)).SetRefractive(1, 1)
 	bb.SetShadow(false)
 	bb.SetTransform(g.transform, bb.Transform())
 	bb.SetLocked(true) // Protect the shape properties from overwrites

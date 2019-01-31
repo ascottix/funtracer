@@ -31,8 +31,7 @@ func createDefaultWorld() *World {
 	w := NewWorld()
 
 	s1 := NewSphere()
-	s1.Material().SetDiffuse(0.7).SetSpecular(0.2)
-	s1.Material().SetPattern(NewSolidColorPattern(RGB(0.8, 1.0, 0.6)))
+	s1.Material().SetDiffuse(0.7).SetSpecular(0.2).SetDiffuseColor(RGB(0.8, 1.0, 0.6))
 	s2 := NewSphere()
 	s2.SetTransform(Scaling(0.5, 0.5, 0.5))
 
@@ -182,10 +181,7 @@ func TestWorldScene(t *testing.T) {
 	TestWithImage(t)
 
 	newMaterial := func(c Color) *Material {
-		m := NewMaterial()
-		p := NewSolidColorPattern(c)
-		m.SetPattern(p)
-		return m
+		return NewMaterial().SetDiffuseColor(c)
 	}
 
 	floor := NewSphere()
@@ -385,8 +381,7 @@ func TestWorldShadeHitWithRefract(t *testing.T) {
 
 	ball := NewSphere()
 	ball.SetTransform(Translation(0, -3.5, -0.5))
-	ball.Material().SetPattern(NewSolidColorPattern(RGB(1, 0, 0)))
-	ball.Material().SetAmbient(0.5)
+	ball.Material().SetDiffuseColor(CSS("red")).SetAmbient(0.5)
 
 	w.AddObjects(floor, ball)
 

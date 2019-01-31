@@ -196,8 +196,7 @@ func TestLightSphereImage(t *testing.T) {
 				point := ray.Position(hit.T)               // Point hit by the ray
 				normal := hit.O.NormalAtEx(point, xs, hit) // Normal to the surface in the hit point
 				eye := dir.Neg()
-				objectColor := hit.O.Material().Pattern.ColorAt(hit.O, point)
-				color := Lighten(light, objectColor, hit.O, point, eye, normal, false)
+				color, _ := Lighten(light, hit.O, point, eye, normal, false)
 				img.Set(x, h-1-y, color)
 			}
 			p.X += dx

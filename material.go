@@ -27,7 +27,9 @@ type Material struct {
 
 func NewMaterial() *Material {
 	m := Material{
-		Pattern:      NewSolidColorPattern(White),
+		MaterialParams: MaterialParams{
+			DiffuseColor: White,
+		},
 		Ambient:      0.1,
 		Diffuse:      0.9,
 		Specular:     0.9,
@@ -49,6 +51,11 @@ func (m *Material) GetParamsAt(ii *IntersectionInfo) {
 	if m.Pattern != nil {
 		ii.Mat.DiffuseColor = m.Pattern.ColorAt(ii.O, ii.Point)
 	}
+}
+
+func (m *Material) SetDiffuseColor(c Color) *Material {
+	m.DiffuseColor = c
+	return m
 }
 
 func (m *Material) SetAmbient(v float64) *Material {

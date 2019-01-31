@@ -10,10 +10,7 @@ import (
 
 func createPlaneScene() (*World, *Camera) {
 	newMaterial := func(c Color) *Material {
-		m := NewMaterial()
-		p := NewSolidColorPattern(c)
-		m.SetPattern(p)
-		return m
+		return NewMaterial().SetDiffuseColor(c)
 	}
 
 	floor := NewPlane()

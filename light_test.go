@@ -14,7 +14,7 @@ func TestLightning(t *testing.T) {
 	position := Point(0, 0, 0)
 
 	test := func(eyev, normalv Tuple, light Light, expected Color, scenario string) {
-		c := Lighten(light, s.Material().Pattern.ColorAt(s, position), s, position, eyev, normalv, false)
+		c, _ := Lighten(light, s, position, eyev, normalv, false)
 		c = c.Add(Gray(0.1)) // Ambient
 		if !c.Equals(expected) {
 			t.Errorf("%s failed: %+v should be %+v", scenario, c, expected)
@@ -40,8 +40,8 @@ func TestShadow(t *testing.T) {
 	light := NewPointLight(Point(0, 0, -10), RGB(1, 1, 1))
 	shadowed := true
 
-	oc := s.Material().Pattern.ColorAt(s, position)
-	if !Lighten(light, oc, s, position, eyev, normalv, shadowed).Equals(Black) {
+	c, _ := Lighten(light, s, position, eyev, normalv, shadowed)
+	if !c.Equals(Black) {
 		t.Errorf("shadow failed")
 	}
 }
@@ -54,10 +54,8 @@ func TestPattern(t *testing.T) {
 	normalv := Vector(0, 0, -1)
 	light := NewPointLight(Point(0, 0, -10), White)
 
-	o1 := s.Material().Pattern.ColorAt(s, Point(0.9, 0, 0))
-	o2 := s.Material().Pattern.ColorAt(s, Point(1.1, 0, 0))
-	c1 := Lighten(light, o1, s, Point(0.9, 0, 0), eyev, normalv, false)
-	c2 := Lighten(light, o2, s, Point(1.1, 0, 0), eyev, normalv, false)
+	c1, o1 := Lighten(light, s, Point(0.9, 0, 0), eyev, normalv, false)
+	c2, o2 := Lighten(light, s, Point(1.1, 0, 0), eyev, normalv, false)
 
 	// We need to add the colors to the light to simulate ambient
 	if !c1.Add(o1).Equals(White) || !c2.Add(o2).Equals(Black) {

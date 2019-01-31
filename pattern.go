@@ -26,8 +26,12 @@ type ProxyPattern struct {
 	O Patternable
 }
 
-func NewProxyPattern(object Patternable, pattern Pattern) Pattern {
-	return &ProxyPattern{O: object, P: pattern}
+func NewProxyPattern(object Patternable, pattern Pattern) (p Pattern) {
+	if pattern != nil {
+		p = &ProxyPattern{O: object, P: pattern}
+	}
+
+	return p
 }
 
 func (p *ProxyPattern) SetTransform(transforms ...Matrix) {

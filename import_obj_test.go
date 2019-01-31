@@ -208,7 +208,7 @@ func TestObjTeapot(t *testing.T) {
 	group := NewGroup()
 	group.SetTransform(RotationX(-Pi/2), Scaling(3, 3, 4), Translation(0, 0, 0.12))
 	m := NewMaterial()
-	m.SetPattern(NewSolidColorPattern(RGB(0.87, 0.87, 0.9)))
+	m.SetDiffuseColor(RGB(0.87, 0.87, 0.9))
 	m.SetReflect(0.3, White)
 	m.SetDiffuse(1)
 	m.SetShininess(256)
@@ -258,4 +258,70 @@ func TestObjTeapot(t *testing.T) {
 	camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(0, 0.5, 0), Vector(0, 1, 0)))
 
 	world.RenderToPNG(camera, "test_obj_teapot.png")
+}
+
+func TestObjDragon(t *testing.T) {
+	TestWithImage(t)
+
+	info := ParseWavefrontObjFromFile("../obj/dragon.obj")
+
+	world := NewWorld()
+
+	world.Ambient = Gray(0.1)
+
+	world.AddLights(NewSpotLight(Point(-10, 20, -10), Point(0, 0, 0), 0.2, 0.25, Gray(0.9)))
+
+	info.Normalize()
+
+	mesh := NewTrimesh(info, -1)
+
+	group := NewGroup()
+
+	/* Interesting parameters for the Stanford Dragon */
+	// m := NewMaterial()
+	// m.SetPattern(JadePattern())
+	// m.SetAmbient(0.2)
+	// m.Pattern.SetTransform(Scaling(0.3, 0.3, 0.3))
+	// m.SetReflect(0.1, White)
+	// m.SetDiffuse(1)
+	// m.SetShininess(10)
+
+	m := NewMaterial()
+	m.SetAmbient(0)
+	m.SetDiffuse(0)
+	m.SetReflect(0.05, White)
+	m.SetRefract(0.95, CSS("CadetBlue"))
+	m.SetIor(1.1)
+
+	group.SetTransform(Scaling(2), Translation(0, 0.2, 0))
+
+	camera := NewCamera(1920/4, 1080/4, 0.7)
+	// world.Options.Supersampling = 4
+	camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(0, 0.3, 0), Vector(0, 1, 0)))
+
+	mesh.SetMaterial(m)
+
+	mesh.AddToGroup(group)
+
+	group.BuildBVH()
+
+	world.AddObjects(group)
+
+	p := NewCheckerPattern(Gray(0.5), Gray(0.7))
+	p.SetTransform(Translation(0, 0.1, 0), Scaling(0.7))
+	x := NewMaterial()
+	x.SetPattern(p)
+	x.SetSpecular(0)
+
+	wall := NewPlane()
+	wall.SetTransform(RotationX(Pi/2), Translation(0, 5, 0))
+	wall.SetMaterial(x)
+
+	floor := NewPlane()
+	floor.SetTransform(Translation(0, -1, 0))
+	floor.SetMaterial(x)
+
+	world.AddObjects(floor, wall)
+
+	world.RenderToPNG(camera, "test_obj_dragon.png")
 }
