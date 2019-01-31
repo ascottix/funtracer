@@ -4,16 +4,21 @@
 
 package main
 
+type MaterialParams struct {
+	DiffuseColor Color // Diffuse color
+}
+
 type Material struct {
+	MaterialParams
 	Pattern      Pattern
-	Ambient      float64	// Ka
-	Diffuse      float64	// Kd
-	Roughness    float64	// Diffuse roughness (i.e. sigma in the Oren-Nayar model)
+	Ambient      float64 // Ka
+	Diffuse      float64 // Kd
+	Roughness    float64 // Diffuse roughness (i.e. sigma in the Oren-Nayar model)
 	Specular     float64
-	Shininess    float64	// Ns, specular exponent
+	Shininess    float64 // Ns, specular exponent
 	Reflect      Color
 	Refract      Color
-	Ior          float64 	// Ni, index of refraction
+	Ior          float64 // Ni, index of refraction
 	ReflectColor Color
 	ReflectLevel float64
 	RefractColor Color
@@ -36,6 +41,14 @@ func NewMaterial() *Material {
 	m.SetRefract(0, White)
 
 	return &m
+}
+
+func (m *Material) GetParamsAt(ii *IntersectionInfo) {
+	ii.Mat = m.MaterialParams
+
+	if m.Pattern != nil {
+		ii.Mat.DiffuseColor = m.Pattern.ColorAt(ii.O, ii.Point)
+	}
 }
 
 func (m *Material) SetAmbient(v float64) *Material {

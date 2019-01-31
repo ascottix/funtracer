@@ -9,7 +9,7 @@ import (
 )
 
 type Light interface {
-	LightenHit(objectColor Color, ii *IntersectionInfo, shadowed bool) Color
+	LightenHit(ii *IntersectionInfo, shadowed bool) Color
 	IsShadowed(rt *Raytracer, point Tuple) bool
 }
 
@@ -77,15 +77,15 @@ func OrenNayar(eyev, lightv, normalv Tuple, sigma float64) float64 {
 // LightenHit computes the color of a point on a surface, for a specified light.
 // It uses the Oren-Nayar model for diffuse and the Blinn-Phong model for specular
 // (ambient contribution is computed elsewhere).
-func LightenHit(lightv Tuple, lightIntensity Color, objectColor Color, ii *IntersectionInfo) (result Color) {
+func LightenHit(lightv Tuple, lightIntensity Color, ii *IntersectionInfo) (result Color) {
 	if cosTheta := lightv.DotProduct(ii.Normalv); cosTheta >= 0 { // Cosine of angle between light vector and surface normal
 		// Light is on the same side of the surface, need to compute both diffuse and specular
 		material := ii.O.Material()
-		effectiveColor := objectColor.Blend(lightIntensity) // Combine light and surface colors
+		diffuseColor := ii.Mat.DiffuseColor.Blend(lightIntensity) // Combine light and surface colors
 
 		// The energy of the light hitting the surface depends on the cosine of the angle
 		// between the light incident direction and the surface normal (Lambert's cosine law)
-		result = result.Add(effectiveColor.Mul(material.Diffuse * cosTheta * OrenNayar(ii.Eyev, lightv, ii.Normalv, material.Roughness)))
+		result = result.Add(diffuseColor.Mul(material.Diffuse * cosTheta * OrenNayar(ii.Eyev, lightv, ii.Normalv, material.Roughness)))
 
 		// The Blinn-Phong model accounts for light that may be reflected directly towards the eye,
 		// controlled by Specular (intensity of reflected light) and Shininess
@@ -106,18 +106,19 @@ func LightenHit(lightv Tuple, lightIntensity Color, objectColor Color, ii *Inter
 // Lighten is used only for tests, it builds a dummy IntersectionInfo object then calls LightenHit to get the color
 func Lighten(light Light, objectColor Color, object Hittable, point, eyev, normalv Tuple, shadowed bool) Color {
 	ii := IntersectionInfo{Intersection: Intersection{O: object}, Point: point, Eyev: eyev, Normalv: normalv}
+	ii.Mat.DiffuseColor = objectColor
 
-	return light.LightenHit(objectColor, &ii, shadowed)
+	return light.LightenHit(&ii, shadowed)
 }
 
 func NewPointLight(pos Tuple, intensity Color) *PointLight {
 	return &PointLight{pos, intensity}
 }
 
-func (light *PointLight) LightenHit(objectColor Color, ii *IntersectionInfo, shadowed bool) (result Color) {
+func (light *PointLight) LightenHit(ii *IntersectionInfo, shadowed bool) (result Color) {
 	if !shadowed {
 		lightv := light.Pos.Sub(ii.Point).Normalize() // Direction to the light source
-		result = LightenHit(lightv, light.Intensity, objectColor, ii)
+		result = LightenHit(lightv, light.Intensity, ii)
 	}
 
 	return
@@ -139,9 +140,9 @@ func (light *DirectionalLight) IsShadowed(rt *Raytracer, point Tuple) bool {
 	return hit.Valid()
 }
 
-func (light *DirectionalLight) LightenHit(objectColor Color, ii *IntersectionInfo, shadowed bool) (result Color) {
+func (light *DirectionalLight) LightenHit(ii *IntersectionInfo, shadowed bool) (result Color) {
 	if !shadowed {
-		result = LightenHit(light.Dir, light.Intensity, objectColor, ii)
+		result = LightenHit(light.Dir, light.Intensity, ii)
 	}
 
 	return
@@ -151,7 +152,7 @@ func NewSpotLight(pos, target Tuple, angleMin, angleMax float64, intensity Color
 	return &SpotLight{pos, target.Sub(pos).Normalize(), angleMin, angleMax, intensity}
 }
 
-func (light *SpotLight) LightenHit(objectColor Color, ii *IntersectionInfo, shadowed bool) (result Color) {
+func (light *SpotLight) LightenHit(ii *IntersectionInfo, shadowed bool) (result Color) {
 	if !shadowed {
 		lightv := light.Pos.Sub(ii.Point).Normalize() // Direction to the light source
 
@@ -170,7 +171,7 @@ func (light *SpotLight) LightenHit(objectColor Color, ii *IntersectionInfo, shad
 				intensity = sqt / (2*(sqt-t) + 1)
 			}
 
-			result = LightenHit(lightv, light.Intensity.Mul(intensity), objectColor, ii)
+			result = LightenHit(lightv, light.Intensity.Mul(intensity), ii)
 		}
 	}
 

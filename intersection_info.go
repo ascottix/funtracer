@@ -6,14 +6,15 @@ package main
 
 type IntersectionInfo struct {
 	Intersection
-	Point      Tuple   // Intersection point
-	OverPoint  Tuple   // Intersection point adjusted a bit in the normal direction (over the surface), used for shadows
-	UnderPoint Tuple   // Intersection point adjusted a bit in the opposide normal direction (under the surface), used for refractions
-	Eyev       Tuple   // Eye vector
-	Normalv    Tuple   // Surface normal vector at intersection point
-	Reflectv   Tuple   // Reflected ray
-	N1         float64 // Refractive index of "outside" (which ray is leaving) material
-	N2         float64 // Refractive index of "inside" (which ray is entering) material
+	Point      Tuple          // Intersection point
+	OverPoint  Tuple          // Intersection point adjusted a bit in the normal direction (over the surface), used for shadows
+	UnderPoint Tuple          // Intersection point adjusted a bit in the opposide normal direction (under the surface), used for refractions
+	Eyev       Tuple          // Eye vector
+	Normalv    Tuple          // Surface normal vector at intersection point
+	Reflectv   Tuple          // Reflected ray
+	N1         float64        // Refractive index of "outside" (which ray is leaving) material
+	N2         float64        // Refractive index of "inside" (which ray is entering) material
+	Mat        MaterialParams // Material info
 	Inside     bool
 	// The following is for performance optimization only and does not contain actual information
 	_containers []Hittable // To avoid allocating a new slice at every hit
