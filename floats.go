@@ -47,21 +47,13 @@ func DegToRad(f float64) float64 {
 	return f * 0.0174533
 }
 
-// Generators
+// Utilities
 func Square(f float64) float64 {
 	return f * f
-}
-
-func NewConstGenerator(f float64) FloatGenerator {
-	return func() float64 {
-		return f
-	}
 }
 
 func NewRandomGenerator(seed int64) FloatGenerator {
 	rand := rand.New(rand.NewSource(seed))
 
-	return func() float64 {
-		return rand.Float64()
-	}
+	return rand.Float64
 }

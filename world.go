@@ -119,7 +119,7 @@ func (w *World) getPixelSampler(jitterId int) Sampler2d {
 		return NewStratified2d(1, 1)
 	}
 
-	return NewJitteredStratified2d(w.Options.Supersampling, w.Options.Supersampling, 13+int64(jitterId)*7)
+	return NewJitteredStratified2d(w.Options.Supersampling, w.Options.Supersampling, NewRandomGenerator(13+int64(jitterId)*7))
 }
 
 func (w *World) GoDivisionRenderToCanvas(goers int, camera *Camera) Canvas {

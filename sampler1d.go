@@ -4,10 +4,6 @@
 
 package main
 
-import (
-	"math/rand"
-)
-
 type Sampler1d interface {
 	Reset()        // Reset the sampler to the start position
 	Next() float64 // Advances to the next position
@@ -24,7 +20,7 @@ type Stratified1d struct {
 // Jittered1d adds a random perturbation to a 1d-sampler
 type Jittered1d struct {
 	sampler Sampler1d
-	rand    *rand.Rand
+	rand    FloatGenerator
 	size    float64 // Maximum range for the random jitter, actual value goes from -size/2 to +size/2
 }
 
@@ -53,10 +49,10 @@ func (ss *Stratified1d) Get() float64 {
 	return ss.curSample
 }
 
-func NewJittered1d(sampler Sampler1d, size float64, seed int64) *Jittered1d {
+func NewJittered1d(sampler Sampler1d, size float64, rand FloatGenerator) *Jittered1d {
 	ss := Jittered1d{
 		sampler: sampler,
-		rand:    rand.New(rand.NewSource(seed)),
+		rand:    rand,
 		size:    size,
 	}
 
@@ -74,7 +70,7 @@ func (ss *Jittered1d) Next() float64 {
 }
 
 func (ss *Jittered1d) Get() float64 {
-	r := (ss.rand.Float64() * ss.size) - (ss.size / 2)
+	r := (ss.rand() * ss.size) - (ss.size / 2)
 
 	return ss.sampler.Get() + r
 }
