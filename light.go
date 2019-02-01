@@ -81,11 +81,10 @@ func LightenHit(lightv Tuple, lightIntensity Color, ii *IntersectionInfo) (resul
 	if cosTheta := lightv.DotProduct(ii.Normalv); cosTheta >= 0 { // Cosine of angle between light vector and surface normal
 		// Light is on the same side of the surface, need to compute both diffuse and specular
 		material := ii.O.Material()
-		diffuseColor := ii.Mat.DiffuseColor.Blend(lightIntensity) // Combine light and surface colors
 
 		// The energy of the light hitting the surface depends on the cosine of the angle
-		// between the light incident direction and the surface normal (Lambert's cosine law)
-		result = result.Add(diffuseColor.Mul(material.Diffuse * cosTheta * OrenNayar(ii.Eyev, lightv, ii.Normalv, material.Roughness)))
+		// between the light direction and the surface normal (Lambert's cosine law) i.e. cosTheta
+		result = ii.Mat.DiffuseColor.Mul(material.Diffuse * cosTheta * OrenNayar(ii.Eyev, lightv, ii.Normalv, material.Roughness))
 
 		// The Blinn-Phong model accounts for light that may be reflected directly towards the eye,
 		// controlled by Specular (intensity of reflected light) and Shininess
@@ -93,10 +92,13 @@ func LightenHit(lightv Tuple, lightIntensity Color, ii *IntersectionInfo) (resul
 		halfv := lightv.Add(ii.Eyev).Normalize() // Half-vector, this would be reflectv := lightv.Neg().Reflect(normalv) in the standard Phong model
 
 		if nDotH := ii.Normalv.DotProduct(halfv); nDotH > 0 { // Would be reflectv.DotProduct(eyev) in the standard Phong model
-			f := math.Pow(nDotH, material.Shininess*4)                     // Multiply by 4 to keep "compatibility" with values tuned for the standard Phong model
-			result = result.Add(lightIntensity.Mul(material.Specular * f)) // Add specular component
+			f := math.Pow(nDotH, 4*material.Shininess) // Multiply shininess by 4 to keep "compatibility" with values tuned for the standard Phong model
+
+			result = result.Add(material.ReflectColor.Mul(material.Specular * f)) // Add specular component
 		}
 		// ...else specular is black
+
+		result = result.Blend(lightIntensity)
 	}
 	// ...else light is on the other side of the surface: diffuse and specular are both black
 
