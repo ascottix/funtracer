@@ -148,41 +148,6 @@ func (light *PointLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result
 	return
 }
 
-func angleToPoint(p1, p2, point Tuple) float64 {
-	v1 := p1.Sub(point)
-	v2 := p2.Sub(point)
-	cosa := v1.DotProduct(v2) / (v1.Length() * v2.Length())
-	return math.Acos(cosa)
-}
-
-func cosAngleToPoint(p1, p2, point Tuple) float64 {
-	v1 := p1.Sub(point)
-	v2 := p2.Sub(point)
-	cosa := v1.DotProduct(v2) / (v1.Length() * v2.Length())
-	return cosa
-}
-
-func cosAngleToPoint2(v1, p, point Tuple) float64 {
-	v2 := point.Sub(p)
-	cosa := v1.DotProduct(v2) / (v1.Length() * v2.Length())
-	return cosa
-}
-
-func AnalyzeRectLight(light *RectLight, point Tuple) {
-	p1 := light.Pos
-	p2 := p1.Add(light.Uv)
-	p3 := p1.Add(light.Vv)
-	p4 := p2.Add(light.Vv)
-
-	a1 := angleToPoint(p1, p4, point)
-	a2 := angleToPoint(p2, p3, point)
-
-	// vp := p1.Sub(point)
-	// cosn := n.DotProduct(vp) / (vp.Length() * n.Length())
-
-	Debugf("a1=%.2f, a2=%.2f\n", a1, a2)
-}
-
 func NewRectLight(intensity Color) *RectLight {
 	return &RectLight{Pos: Point(0, 0, 0), Uv: Vector(1, 0, 0), Vv: Vector(0, 1, 0), Intensity: intensity}
 }
@@ -216,12 +181,22 @@ func (light *RectLight) SetDirection(pos, target Tuple) {
 	light.Pos = pos.Sub(light.Uv.Mul(0.5)).Sub(light.Vv.Mul(0.5))
 }
 
-const LSamples float64 = 16
+func getSamplesForAxis(p1, p2, point Tuple, rt *Raytracer) float64 {
+	const apow = 7 // Seems to work with 6 too, this is a bit safer
+
+	v1 := p1.Sub(point)
+	v2 := p2.Sub(point)
+	cosa := v1.DotProduct(v2) / (v1.Length() * v2.Length())
+
+	cosa = math.Abs(cosa)
+	cosa = 1 - math.Pow(cosa, apow)
+
+	return math.Round(cosa*float64(rt.world.Options.AreaLightSamples) + 0.5)
+}
 
 func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result Color) {
-	numSamplesU := LSamples
-	numSamplesV := LSamples
-
+	// Before doing a full scan of the area light, let's see if we can get a decent result more cheaply,
+	// start by sampling the four corners and see if they all match
 	p1 := light.Pos
 	p2 := light.Pos
 	p3 := p1.Add(light.Uv)
@@ -242,23 +217,17 @@ func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result 
 	}
 
 	if chits == 0 || chits == 4 {
-		a1 := cosAngleToPoint(p1, p3, ii.Point)
-		a2 := cosAngleToPoint(p2, p4, ii.Point)
+		// If all corners match, let's do an attempt at using less samples.
+		// We try to reduce the number of samples for each axis according to the angle
+		// that the axis endpoints form with the surface point: if this angle is small
+		// (e.g. the light is far from the point or light surface is at an angle with
+		// respect to the intersection point) then it should be possible to use less
+		// samples.
+		su := getSamplesForAxis(p1, p3, ii.Point, rt)
+		sv := getSamplesForAxis(p2, p4, ii.Point, rt)
 
-		const apow = 7 // Seems to work with 6 too, this is a bit safer
-
-		a1 = math.Abs(a1)
-		a1 = 1 - math.Pow(a1, apow)
-		numSamplesU *= a1
-		numSamplesU = math.Round(numSamplesU + 0.5)
-
-		a2 = math.Abs(a2)
-		a2 = 1 - math.Pow(a2, apow)
-		numSamplesV *= a2
-		numSamplesV = math.Round(numSamplesV + 0.5)
-
-		usize := 1.0 / math.Max(4, math.Min(numSamplesU, 8))
-		vsize := 1.0 / math.Max(4, math.Min(numSamplesV, 8))
+		usize := 1.0 / math.Max(4, math.Min(su, 8))
+		vsize := 1.0 / math.Max(4, math.Min(sv, 8))
 
 		hits := 0
 		done := 0
@@ -275,6 +244,8 @@ func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result 
 			}
 		}
 
+		// To minimize errors and visual artifacts, we use the reduced number of samples only
+		// if all sampled points are in agreement (i.e. all hit or all miss)
 		if hits == done && chits == 0 {
 			for u := Epsilon; u < 1; u += usize {
 				for v := Epsilon; v < 1; v += vsize {
@@ -284,6 +255,7 @@ func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result 
 					result = result.Add(LightenHit(lightv, light.Intensity, ii))
 				}
 			}
+
 			return result.Mul(1 / float64(hits))
 		}
 
@@ -292,11 +264,12 @@ func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result 
 		}
 	}
 
-	result = Black
-	numSamplesU = 16
-	numSamplesV = 16
-	usize := 1 / numSamplesU
-	vsize := 1 / numSamplesV
+	// If we're here then our attempts at saving time failed... sample the area using a jittered stratified sampler
+	usamples := float64(rt.world.Options.AreaLightSamples)
+	vsamples := float64(rt.world.Options.AreaLightSamples)
+
+	usize := 1 / usamples
+	vsize := 1 / vsamples
 
 	for u := Epsilon; u < 1; u += usize {
 		for v := Epsilon; v < 1; v += vsize {
@@ -309,7 +282,7 @@ func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result 
 		}
 	}
 
-	return result.Mul(1 / (numSamplesU * numSamplesV))
+	return result.Mul(usize * vsize)
 }
 
 func NewDirectionalLight(dir Tuple, intensity Color) *DirectionalLight {
