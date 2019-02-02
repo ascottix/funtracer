@@ -12,6 +12,7 @@ type Raytracer struct {
 	world *World
 	xs    *Intersections
 	ii    *IntersectionInfo
+	rand  FloatGenerator
 }
 
 func NewRaytracer(world *World) *Raytracer {
@@ -19,6 +20,7 @@ func NewRaytracer(world *World) *Raytracer {
 		world: world,
 		xs:    NewIntersections(),
 		ii:    &IntersectionInfo{},
+		rand:  NewRandomGenerator(1),
 	}
 
 	return &rt
@@ -44,7 +46,7 @@ func (rt *Raytracer) ShadeHit(ii *IntersectionInfo, depth int) (c Color) {
 	c = ii.Mat.DiffuseColor.Blend(rt.world.Ambient.Mul(material.Ambient))
 
 	for _, light := range rt.world.Lights {
-		c = c.Add(light.LightenHit(ii, light.IsShadowed(rt, ii.OverPoint)))
+		c = c.Add(light.LightenHit(ii, rt))
 	}
 
 	m := ii.O.Material()

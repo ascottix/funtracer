@@ -226,21 +226,21 @@ func TestWorldShadow(t *testing.T) {
 	w := createDefaultWorld()
 	rt := NewRaytracer(w)
 
-	light := w.Lights[0]
+	light := w.Lights[0].(*PointLight)
 
-	if light.IsShadowed(rt, Point(0, 10, 0)) {
+	if IsShadowed(light.Pos, rt, Point(0, 10, 0)) {
 		t.Errorf("no shadow expected")
 	}
 
-	if !light.IsShadowed(rt, Point(10, -10, 10)) {
+	if !IsShadowed(light.Pos, rt, Point(10, -10, 10)) {
 		t.Errorf("shadow expected")
 	}
 
-	if light.IsShadowed(rt, Point(-20, 20, 20)) {
+	if IsShadowed(light.Pos, rt, Point(-20, 20, 20)) {
 		t.Errorf("no shadow expected (2)")
 	}
 
-	if light.IsShadowed(rt, Point(-2, 2, -2)) {
+	if IsShadowed(light.Pos, rt, Point(-2, 2, -2)) {
 		t.Errorf("no shadow expected (3)")
 	}
 }

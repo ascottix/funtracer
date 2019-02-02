@@ -13,7 +13,7 @@ func TestLightning(t *testing.T) {
 	s := NewSphere() // Object is not important here, only the material
 	position := Point(0, 0, 0)
 
-	test := func(eyev, normalv Tuple, light Light, expected Color, scenario string) {
+	test := func(eyev, normalv Tuple, light *PointLight, expected Color, scenario string) {
 		c, _ := Lighten(light, s, position, eyev, normalv, false)
 		c = c.Add(Gray(0.1)) // Ambient
 		if !c.Equals(expected) {
@@ -61,4 +61,33 @@ func TestPattern(t *testing.T) {
 	if !c1.Add(o1).Equals(White) || !c2.Add(o2).Equals(Black) {
 		t.Errorf("light on strip pattern failed: %+v, %+v", c1, c2)
 	}
+}
+
+func TestRectLight(t *testing.T) {
+	TestWithImage(t)
+
+	floor := NewPlane()
+
+	s1 := NewSphere()
+	s1.SetTransform(Translation(0, 1, 0))
+	s1.SetMaterial(NewMaterial().SetDiffuseColor(CSS("orange")).SetDiffuse(0.9))
+
+	s2 := NewSphere()
+	s2.SetTransform(Translation(-2.5, 1, 0))
+	s2.SetMaterial(NewMaterial().SetDiffuseColor(CSS("dodgerblue")).SetDiffuse(0.9))
+
+	light := NewRectLight(RGB(1, 1, 1).Mul(0.9))
+	light.SetSize(2, 2)
+	light.SetDirection(Point(3, 5, -4), Point(0, 0, 0))
+
+	world := NewWorld()
+
+	world.AddObjects(floor, s1, s2)
+
+	world.AddLights(light)
+
+	camera := NewCamera(640, 320, Pi/3)
+	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -5), Point(0, 1, 0), Vector(0, 1, 0)))
+
+	world.RenderToPNG(camera, "test_rect_light.png")
 }
