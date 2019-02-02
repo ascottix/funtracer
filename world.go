@@ -24,7 +24,7 @@ func NewWorld() *World {
 
 	w.SetAmbient(White)
 	w.SetOptions(NewOptions())
-	w.ErpCanvasToImage = ErpGamma // Produce a gamma-corrected image by default
+	w.ErpCanvasToImage = ErpLinearToGamma // Produce a gamma-corrected image by default
 
 	return w
 }

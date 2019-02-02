@@ -172,7 +172,7 @@ YellowGreen=9ACD32
 		g := (value >> 8) & 0xFF
 		b := (value) & 0xFF
 
-		c = RGB(float64(r)/255, float64(g)/255, float64(b)/255)
+		c = RGB(ErpGammaToLinear(float64(r)/255), ErpGammaToLinear(float64(g)/255), ErpGammaToLinear(float64(b)/255))
 	}
 
 	return
