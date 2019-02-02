@@ -17,23 +17,25 @@ const (
 )
 
 type Options struct {
-	OutFilename     string `json:"o"`
-	OutWidth        int    `json:"ow"`
-	OutHeight       int    `json:"oh"`
-	NumThreads      int    `json:"nt"`
-	Supersampling   int    `json:"ss"`
-	ReflectionDepth int    `json:"rd"`
+	OutFilename      string `json:"o"`
+	OutWidth         int    `json:"ow"`
+	OutHeight        int    `json:"oh"`
+	NumThreads       int    `json:"nt"`
+	Supersampling    int    `json:"ss"`
+	ReflectionDepth  int    `json:"rd"`
+	AreaLightSamples int    `json:"as"`
 }
 
 func NewOptions() *Options {
 	// Assign a default value to all options
 	options := Options{
-		OutFilename:     "fun.png",
-		OutWidth:        0,
-		OutHeight:       0,
-		NumThreads:      runtime.GOMAXPROCS(0),
-		Supersampling:   1,
-		ReflectionDepth: 4,
+		OutFilename:      "fun.png",
+		OutWidth:         0,
+		OutHeight:        0,
+		NumThreads:       runtime.GOMAXPROCS(0),
+		Supersampling:    1,
+		ReflectionDepth:  4,
+		AreaLightSamples: 16, // Samples per axis
 	}
 
 	return &options

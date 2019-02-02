@@ -70,17 +70,18 @@ func TestRectLight(t *testing.T) {
 
 	s1 := NewSphere()
 	s1.SetTransform(Translation(0, 1, 0))
-	s1.SetMaterial(NewMaterial().SetDiffuseColor(CSS("orange")).SetDiffuse(0.9))
+	s1.SetMaterial(NewMaterial().SetDiffuseColor(CSS("orange")).SetDiffuse(1))
 
 	s2 := NewSphere()
 	s2.SetTransform(Translation(-2.5, 1, 0))
-	s2.SetMaterial(NewMaterial().SetDiffuseColor(CSS("dodgerblue")).SetDiffuse(0.9))
+	s2.SetMaterial(NewMaterial().SetDiffuseColor(CSS("dodgerblue")).SetDiffuse(1))
 
 	light := NewRectLight(RGB(1, 1, 1).Mul(0.9))
 	light.SetSize(2, 2)
 	light.SetDirection(Point(3, 5, -4), Point(0, 0, 0))
 
 	world := NewWorld()
+	world.SetAmbient(Gray(0.05))
 
 	world.AddObjects(floor, s1, s2)
 
