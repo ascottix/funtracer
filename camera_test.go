@@ -34,18 +34,18 @@ func TestCameraPixsize(t *testing.T) {
 func TestCameraRays(t *testing.T) {
 	c := NewCamera(201, 101, Pi2)
 
-	r := c.RayForPixelI(100, 50)
+	r := c.RayForPixel(100.5, 50.5)
 	if !r.Origin.Equals(Point(0, 0, 0)) || !r.Direction.Equals(Vector(0, 0, -1)) {
 		t.Error("ray for pixel 1 failed")
 	}
 
-	r = c.RayForPixelI(0, 0)
+	r = c.RayForPixel(0.5, 0.5)
 	if !r.Origin.Equals(Point(0, 0, 0)) || !r.Direction.Equals(Vector(0.66519, 0.33259, -0.66851)) {
 		t.Error("ray for pixel 2 failed")
 	}
 
 	c.SetTransform(RotationY(Pi / 4).Mul(Translation(0, -2, 5)))
-	r = c.RayForPixelI(100, 50)
+	r = c.RayForPixel(100.5, 50.5)
 	if !r.Origin.Equals(Point(0, 2, -5)) || !r.Direction.Equals(Vector(math.Sqrt(2)/2, 0, -math.Sqrt(2)/2)) {
 		t.Error("ray for pixel 2 failed")
 	}

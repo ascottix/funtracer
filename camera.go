@@ -51,11 +51,7 @@ func (c *Camera) SetViewSize(hsize, vsize int) {
 	c.pixsize = (c.halfwidth * 2) / float64(hsize) // Assume square pixel
 }
 
-func (c *Camera) RayForPixelI(x, y int) Ray {
-	return c.RayForPixelF(float64(x)+0.5, float64(y)+0.5)
-}
-
-func (c *Camera) RayForPixelF(x, y float64) Ray {
+func (c *Camera) RayForPixel(x, y float64) Ray {
 	// Offset of the pixel center from edge of canvas
 	xoffset := x * c.pixsize
 	yoffset := y * c.pixsize
@@ -74,7 +70,34 @@ func (c *Camera) RayForPixelF(x, y float64) Ray {
 	return Ray{origin, direction}
 }
 
-func (c *Camera) GetRayForDepthOfField(x, y, lensRadius, focalDistance float64, sampler Sampler2d) Ray {
+// ConcentricSampleDisk converts samples from [0,1)x[0,1) into 
+// a 2D unit disk centered at the origin (0,0) 
+func ConcentricSampleDisk(u, v float64) (float64, float64) {
+	// Get two random samples in the [-1,+1] interval
+	x := u*2 - 1
+	y := v*2 - 1
+
+	if x != 0 || y != 0 {
+		// Apply concentric mapping to point
+		var r, theta float64
+
+		if math.Abs(x) > math.Abs(y) {
+			r = x
+			theta = (y / x) * Pi / 4
+		} else {
+			r = y
+			theta = Pi / 2 - (x / y) * Pi / 4
+		}
+
+		x = r * math.Cos(theta)
+		y = r * math.Sin(theta)
+	}
+
+    return x, y
+}
+
+
+func (c *Camera) RayForPixelDepthOfField(x, y, lensRadius, focalDistance float64, rand FloatGenerator) Ray {
 	// Offset of the pixel center from edge of canvas
 	xoffset := x * c.pixsize
 	yoffset := y * c.pixsize
@@ -84,7 +107,7 @@ func (c *Camera) GetRayForDepthOfField(x, y, lensRadius, focalDistance float64, 
 	worldy := c.halfheight - yoffset
 
 	// Displace origin to a random point on the lens
-	lensX, lensY := sampler.Next()
+	lensX, lensY := ConcentricSampleDisk(rand(), rand())
 	origin := Point(lensX*lensRadius, lensY*lensRadius, 0)
 
 	// Get the target pixel on the camera plane (in world coordinates)

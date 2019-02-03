@@ -79,7 +79,7 @@ func (w *World) RenderToCanvas(c *Camera) Canvas {
 
 	for y := 0; y < c.VSize; y++ {
 		for x := 0; x < c.HSize; x++ {
-			ray := c.RayForPixelI(x, y)
+			ray := c.RayForPixel(float64(x)+0.5, float64(y)+0.5)
 			color := w.ColorAt(ray, w.Options.ReflectionDepth)
 			canvas.FastSetPixelAt(x, y, color)
 		}
@@ -105,20 +105,9 @@ func (w *World) RefractedColor(ii *IntersectionInfo, depth int) Color {
 	return NewRaytracer(w).RefractedColor(ii, depth)
 }
 
-type XY struct {
-	x, y float64
-}
-
-type XYC struct {
-	XY
-	c Color
-}
-
 func (w *World) getPixelSampler(rand FloatGenerator) (s Sampler2d) {
 	if w.Options.Supersampling == 1 {
 		s = NewStratified2d(1, 1)
-	} else if w.Options.LensRadius > 0 {
-		s = NewConcentricSampleDisk(rand)
 	} else {
 		s = NewJitteredStratified2d(w.Options.Supersampling, w.Options.Supersampling, rand)
 	}
@@ -142,25 +131,26 @@ func (w *World) GoDivisionRenderToCanvas(goers int, camera *Camera) Canvas {
 
 		for y := 0; y < camera.VSize; y++ {
 			for x := r; x < camera.HSize; x += m {
+				// Reset sampler to keep all values into the proper range
 				sampler.Reset()
-				if w.Options.LensRadius > 0 {
-					// Enable depth of field
-					for s := 0; s < samplesPerPixel; s++ {
-						px, py := float64(x)+0.5, float64(y)+0.5
-						ray := camera.GetRayForDepthOfField(px, py, w.Options.LensRadius, w.Options.FocalDistance, sampler)
-						col := rt.ColorAt(ray)
-						canvas.AddPixelAt(px, py, col)
+
+				for s := 0; s < samplesPerPixel; s++ {
+					// Get the pixel coordinates
+					px, py := sampler.Next()
+					px += float64(x)
+					py += float64(y)
+
+					// Get ray from viewpoint to target pixel
+					var ray Ray
+					if w.Options.LensRadius > 0 {
+						ray = camera.RayForPixelDepthOfField(px, py, w.Options.LensRadius, w.Options.FocalDistance, rt.rand)
+					} else {
+						ray = camera.RayForPixel(px, py)
 					}
-				} else {
-					// Render from a pinhole camera
-					for s := 0; s < samplesPerPixel; s++ {
-						px, py := sampler.Next()
-						px += float64(x)
-						py += float64(y)
-						ray := camera.RayForPixelF(px, py)
-						col := rt.ColorAt(ray)
-						canvas.AddPixelAt(px, py, col)
-					}
+
+					// Render and store color
+					col := rt.ColorAt(ray)
+					canvas.AddPixelAt(px, py, col)
 				}
 			}
 		}
