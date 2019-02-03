@@ -245,11 +245,7 @@ func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result 
 		}
 
 		// To minimize errors and visual artifacts, we use the reduced number of samples only
-<<<<<<< HEAD
 		// if all sampled points are in agreement (i.e. all hit or all miss)
-=======
-		// if all samples points are in agreement (i.e. all hit or all miss)
->>>>>>> 955d2d30eb5a6b0129f7887defaf2f0cd4482efe
 		if hits == done && chits == 0 {
 			for u := Epsilon; u < 1; u += usize {
 				for v := Epsilon; v < 1; v += vsize {
