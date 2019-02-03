@@ -60,7 +60,7 @@ func (c *Camera) RayForPixelF(x, y float64) Ray {
 	xoffset := x * c.pixsize
 	yoffset := y * c.pixsize
 
-	// Note: camera always look toward -z, which places +x to the left
+	// Note: camera is placed at (0,0,0) and looks toward -z, with +x to the left
 
 	// Get untransformed world coordinates
 	worldx := c.halfwidth - xoffset
@@ -69,6 +69,38 @@ func (c *Camera) RayForPixelF(x, y float64) Ray {
 	// Apply the transformation
 	pixel := c.Tinverse.MulT(Point(worldx, worldy, -1))
 	origin := c.Tinverse.MulT(Point(0, 0, 0))
+	direction := pixel.Sub(origin).Normalize()
+
+	return Ray{origin, direction}
+}
+
+func (c *Camera) GetRayForDepthOfField(x, y, lensRadius, focalDistance float64, sampler Sampler2d) Ray {
+	// Offset of the pixel center from edge of canvas
+	xoffset := x * c.pixsize
+	yoffset := y * c.pixsize
+
+	// Untransformed world coordinates
+	worldx := c.halfwidth - xoffset
+	worldy := c.halfheight - yoffset
+
+	// Displace origin to a random point on the lens
+	lensX, lensY := sampler.Next()
+	origin := Point(lensX*lensRadius, lensY*lensRadius, 0)
+
+	// Get the target pixel on the camera plane (in world coordinates)
+	pixel := Point(worldx, worldy, -1)
+
+	// Adjust the target pixel to account for focal distance
+	ft := focalDistance / -pixel.Normalize().Z	// How far the pixel is from the focal plane
+	pFocus := pixel.Mul(ft)	// Target point on the focal plane
+
+	pixel = pFocus.Sub(origin)		// Direction from adjusted origin to target plane
+	pixel = pixel.Div(-pixel.Z)		// Place pixel on the z=-1 plane
+	pixel = pixel.Add(origin)		// Add origin back
+	pixel.W = 1						// Make sure we have a point
+
+	pixel = c.Tinverse.MulT(pixel)
+	origin = c.Tinverse.MulT(origin)
 	direction := pixel.Sub(origin).Normalize()
 
 	return Ray{origin, direction}

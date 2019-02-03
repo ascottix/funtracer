@@ -114,12 +114,16 @@ type XYC struct {
 	c Color
 }
 
-func (w *World) getPixelSampler(jitterId int) Sampler2d {
+func (w *World) getPixelSampler(rand FloatGenerator) (s Sampler2d) {
 	if w.Options.Supersampling == 1 {
-		return NewStratified2d(1, 1)
+		s = NewStratified2d(1, 1)
+	} else if w.Options.LensRadius > 0 {
+		s = NewConcentricSampleDisk(rand)
+	} else {
+		s = NewJitteredStratified2d(w.Options.Supersampling, w.Options.Supersampling, rand)
 	}
 
-	return NewJitteredStratified2d(w.Options.Supersampling, w.Options.Supersampling, NewRandomGenerator(13+int64(jitterId)*7))
+	return s
 }
 
 func (w *World) GoDivisionRenderToCanvas(goers int, camera *Camera) Canvas {
@@ -134,18 +138,29 @@ func (w *World) GoDivisionRenderToCanvas(goers int, camera *Camera) Canvas {
 
 		rt := NewRaytracer(w)
 
-		sampler := w.getPixelSampler(r)
+		sampler := w.getPixelSampler(rt.rand) // NewRandomGenerator(13+int64(s)*7)
 
 		for y := 0; y < camera.VSize; y++ {
 			for x := r; x < camera.HSize; x += m {
 				sampler.Reset()
-				for s := 0; s < samplesPerPixel; s++ {
-					px, py := sampler.Next()
-					px += float64(x)
-					py += float64(y)
-					ray := camera.RayForPixelF(px, py)
-					col := rt.ColorAt(ray)
-					canvas.AddPixelAt(px, py, col)
+				if w.Options.LensRadius > 0 {
+					// Enable depth of field
+					for s := 0; s < samplesPerPixel; s++ {
+						px, py := float64(x)+0.5, float64(y)+0.5
+						ray := camera.GetRayForDepthOfField(px, py, w.Options.LensRadius, w.Options.FocalDistance, sampler)
+						col := rt.ColorAt(ray)
+						canvas.AddPixelAt(px, py, col)
+					}
+				} else {
+					// Render from a pinhole camera
+					for s := 0; s < samplesPerPixel; s++ {
+						px, py := sampler.Next()
+						px += float64(x)
+						py += float64(y)
+						ray := camera.RayForPixelF(px, py)
+						col := rt.ColorAt(ray)
+						canvas.AddPixelAt(px, py, col)
+					}
 				}
 			}
 		}
@@ -163,78 +178,9 @@ func (w *World) GoDivisionRenderToCanvas(goers int, camera *Camera) Canvas {
 	return canvas
 }
 
-func (w *World) GoPipelineRenderToCanvas(goers int, camera *Camera) Canvas {
-	samplesPerPixel := w.Options.Supersampling * w.Options.Supersampling
-
-	sampler := func(out chan XY) {
-		js2d := w.getPixelSampler(0)
-
-		for y := 0; y < camera.VSize; y++ {
-			for x := 0; x < camera.HSize; x++ {
-				js2d.Reset()
-				for s := 0; s < samplesPerPixel; s++ {
-					px, py := js2d.Next()
-					out <- XY{float64(x) + px, float64(y) + py}
-				}
-			}
-		}
-
-		close(out)
-	}
-
-	renderer := func(in chan XY, out chan XYC) {
-		var wg sync.WaitGroup
-
-		for i := 0; i < goers; i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-
-				rt := NewRaytracer(w)
-
-				for xy := range in {
-					ray := camera.RayForPixelF(xy.x, xy.y)
-					col := rt.ColorAt(ray)
-					out <- XYC{xy, col}
-				}
-			}()
-		}
-
-		wg.Wait()
-		close(out)
-	}
-
-	imager := func(in chan XYC, out chan Canvas) {
-		cvs := NewCanvas(camera.HSize, camera.VSize)
-
-		for xyc := range in {
-			cvs.AddPixelAt(xyc.x, xyc.y, xyc.c)
-		}
-
-		cvs.Mul(1.0 / float64(samplesPerPixel))
-
-		out <- cvs
-	}
-
-	cxy := make(chan XY, 8)   // sampler -> (x,y) coordinates of point where pixel is sampled
-	cpix := make(chan XYC, 8) // (x,y) -> renderers -> (x,y,color of sampled point)
-	cimg := make(chan Canvas) // (x,y,color) -> image
-
-	go sampler(cxy)
-
-	go renderer(cxy, cpix)
-
-	go imager(cpix, cimg)
-
-	canvas := <-cimg
-
-	return canvas
-}
-
 func (w *World) RenderToImage(c *Camera) image.Image {
 	canvas := w.GoDivisionRenderToCanvas(w.Options.NumThreads, c)
 	// Alternative renderers
-	// canvas := w.GoPipelineRenderToCanvas(w.Options.NumThreads, c)
 	// canvas := w.RenderToCanvas(c)
 
 	return canvas.ToImage(w.ErpCanvasToImage)

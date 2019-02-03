@@ -19,7 +19,8 @@ So far it has worked really well (the way the book is designed helps a lot) and 
 - Constructive Solid Geometry (CSG)
 - Bounding Volume Hierarchies (BVH) with the Surface Area Heuristic (SAH)
 - Color patterns
-- Lights: directional, point, spot
+- Lights: area (soft shadows), directional, point, spot
+- Depth of field
 - Import .fun, .ray and .obj files
 - Parallel rendering
 

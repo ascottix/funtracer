@@ -92,3 +92,33 @@ func TestRectLight(t *testing.T) {
 
 	world.RenderToPNG(camera, "test_rect_light.png")
 }
+
+func TestDepthOfField(t *testing.T) {
+	TestWithImage(t)
+
+	s1 := NewSphere()
+	s1.SetTransform(Translation(0, 1, 0))
+	s1.SetMaterial(NewMaterial().SetDiffuseColor(CSS("orange")).SetDiffuse(1))
+
+	s2 := NewSphere()
+	s2.SetTransform(Translation(-2, 1, +4))
+	s2.SetMaterial(NewMaterial().SetDiffuseColor(CSS("dodgerblue")).SetDiffuse(1))
+
+	light := NewPointLight(Point(0,4,-4), RGB(1, 1, 1).Mul(0.9))
+
+	world := NewWorld()
+	world.SetAmbient(Gray(0.05))
+
+	world.AddObjects(s1, s2)
+
+	world.AddLights(light)
+
+	world.Options.Supersampling = 16
+	world.Options.LensRadius = 0.2
+	world.Options.FocalDistance = 5 // 5 sets focus on orange ball, 9 on blue ball
+
+	camera := NewCamera(300, 300, Pi/4)
+	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -5), Point(0, 1, 0), Vector(0, 1, 0)))
+
+	world.RenderToPNG(camera, "test_depth_of_field.png")
+}

@@ -24,6 +24,8 @@ type Options struct {
 	Supersampling    int    `json:"ss"`
 	ReflectionDepth  int    `json:"rd"`
 	AreaLightSamples int    `json:"as"`
+	LensRadius		 float64
+	FocalDistance	 float64
 }
 
 func NewOptions() *Options {
@@ -36,6 +38,8 @@ func NewOptions() *Options {
 		Supersampling:    1,
 		ReflectionDepth:  4,
 		AreaLightSamples: 16, // Samples per axis
+		LensRadius:		  0,
+		FocalDistance:	  0,
 	}
 
 	return &options
@@ -48,6 +52,8 @@ func (options *Options) InitFlags() {
 	flag.IntVar(&options.NumThreads, "nt", options.NumThreads, "how many threads can be used for processing")
 	flag.IntVar(&options.Supersampling, "ss", options.Supersampling, "supersampling level: each pixel is sampled n*n times")
 	flag.IntVar(&options.ReflectionDepth, "rd", options.ReflectionDepth, "maximum depth of secondary rays")
+	flag.Float64Var(&options.LensRadius, "lr", options.LensRadius, "radius of camera lens (controls depth of field)")
+	flag.Float64Var(&options.FocalDistance, "fd", options.FocalDistance, "camera focal distance (enabled if lens radius is positive)")
 }
 
 func (options *Options) LoadFromJSON(filename string) {
