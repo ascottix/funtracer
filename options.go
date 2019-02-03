@@ -24,8 +24,8 @@ type Options struct {
 	Supersampling    int    `json:"ss"`
 	ReflectionDepth  int    `json:"rd"`
 	AreaLightSamples int    `json:"as"`
-	LensRadius		 float64
-	FocalDistance	 float64
+	LensRadius       float64
+	FocalDistance    float64
 }
 
 func NewOptions() *Options {
@@ -38,8 +38,8 @@ func NewOptions() *Options {
 		Supersampling:    1,
 		ReflectionDepth:  4,
 		AreaLightSamples: 16, // Samples per axis
-		LensRadius:		  0,
-		FocalDistance:	  0,
+		LensRadius:       0,
+		FocalDistance:    0,
 	}
 
 	return &options

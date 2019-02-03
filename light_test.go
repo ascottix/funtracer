@@ -104,7 +104,7 @@ func TestDepthOfField(t *testing.T) {
 	s2.SetTransform(Translation(-2, 1, +4))
 	s2.SetMaterial(NewMaterial().SetDiffuseColor(CSS("dodgerblue")).SetDiffuse(1))
 
-	light := NewPointLight(Point(0,4,-4), RGB(1, 1, 1).Mul(0.9))
+	light := NewPointLight(Point(0, 4, -4), RGB(1, 1, 1).Mul(0.9))
 
 	world := NewWorld()
 	world.SetAmbient(Gray(0.05))
