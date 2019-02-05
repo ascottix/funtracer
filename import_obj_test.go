@@ -248,6 +248,12 @@ func TestObjTeapot(t *testing.T) {
 	camera := NewCamera(400*2, 200*2, 1)
 	camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(0, 0.5, 0), Vector(0, 1, 0)))
 
+	// Zoom on shadow
+	if false {
+		camera.SetFieldOfView(0.5)
+		camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(1.5, 0, 0), Vector(0, 1, 0)))
+	}
+
 	world.RenderToPNG(camera, "test_obj_teapot.png")
 }
 
@@ -287,7 +293,6 @@ func TestObjDragon(t *testing.T) {
 	group.SetTransform(Scaling(2), Translation(0, 0.2, 0))
 
 	camera := NewCamera(1920/4, 1080/4, 0.7)
-	// world.Options.Supersampling = 4
 	camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(0, 0.3, 0), Vector(0, 1, 0)))
 
 	mesh.SetMaterial(m)

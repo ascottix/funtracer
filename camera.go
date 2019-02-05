@@ -10,13 +10,13 @@ import (
 
 type Camera struct {
 	Transformer
-	HSize      int		// Image width in pixel
-	VSize      int		// Image height in pixel
-	FOV        float64	// Field of view in radians
-	aspect     float64	// Aspect ratio
-	halfwidth  float64	// Half width of projected image
-	halfheight float64	// Half height of projected image
-	pixsize    float64	// Size of one pixel
+	HSize      int     // Image width in pixel
+	VSize      int     // Image height in pixel
+	FOV        float64 // Field of view in radians
+	aspect     float64 // Aspect ratio
+	halfwidth  float64 // Half width of projected image
+	halfheight float64 // Half height of projected image
+	pixsize    float64 // Size of one pixel
 }
 
 func NewCamera(hsize, vsize int, fov float64) *Camera {

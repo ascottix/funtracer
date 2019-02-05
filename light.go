@@ -181,92 +181,9 @@ func (light *RectLight) SetDirection(pos, target Tuple) {
 	light.Pos = pos.Sub(light.Uv.Mul(0.5)).Sub(light.Vv.Mul(0.5))
 }
 
-func getSamplesForAxis(p1, p2, point Tuple, rt *Raytracer) float64 {
-	const apow = 7 // Seems to work with 6 too, this is a bit safer
-
-	v1 := p1.Sub(point)
-	v2 := p2.Sub(point)
-	cosa := v1.DotProduct(v2) / (v1.Length() * v2.Length())
-
-	cosa = math.Abs(cosa)
-	cosa = 1 - math.Pow(cosa, apow)
-
-	return math.Round(cosa*float64(rt.world.Options.AreaLightSamples) + 0.5)
-}
-
-func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result Color) {
-	// Before doing a full scan of the area light, let's see if we can get a decent result more cheaply,
-	// start by sampling the four corners and see if they all match
-	p1 := light.Pos
-	p2 := light.Pos
-	p3 := p1.Add(light.Uv)
-	p4 := p2.Add(light.Vv)
-
-	chits := 0
-	if IsShadowed(p1, rt, ii.OverPoint) {
-		chits++
-	}
-	if IsShadowed(p2, rt, ii.OverPoint) {
-		chits++
-	}
-	if IsShadowed(p3, rt, ii.OverPoint) {
-		chits++
-	}
-	if IsShadowed(p4, rt, ii.OverPoint) {
-		chits++
-	}
-
-	if chits == 0 || chits == 4 {
-		// If all corners match, let's do an attempt at using less samples.
-		// We try to reduce the number of samples for each axis according to the angle
-		// that the axis endpoints form with the surface point: if this angle is small
-		// (e.g. the light is far from the point or light surface is at an angle with
-		// respect to the intersection point) then it should be possible to use less
-		// samples.
-		su := getSamplesForAxis(p1, p3, ii.Point, rt)
-		sv := getSamplesForAxis(p2, p4, ii.Point, rt)
-
-		usize := 1.0 / math.Max(4, math.Min(su, 8))
-		vsize := 1.0 / math.Max(4, math.Min(sv, 8))
-
-		hits := 0
-		done := 0
-
-		for u := Epsilon; u < 1; u += usize {
-			for v := Epsilon; v < 1; v += vsize {
-				pos := light.Pos.Add(light.Uv.Mul(u + rt.rand()*usize)).Add(light.Vv.Mul(v + rt.rand()*vsize))
-
-				done++
-
-				if !IsShadowed(pos, rt, ii.OverPoint) {
-					hits++
-				}
-			}
-		}
-
-		// To minimize errors and visual artifacts, we use the reduced number of samples only
-		// if all sampled points are in agreement (i.e. all hit or all miss)
-		if hits == done && chits == 0 {
-			for u := Epsilon; u < 1; u += usize {
-				for v := Epsilon; v < 1; v += vsize {
-					pos := light.Pos.Add(light.Uv.Mul(u + rt.rand()*usize)).Add(light.Vv.Mul(v + rt.rand()*vsize))
-
-					lightv := pos.Sub(ii.Point).Normalize() // Direction to the light source
-					result = result.Add(LightenHit(lightv, light.Intensity, ii))
-				}
-			}
-
-			return result.Mul(1 / float64(hits))
-		}
-
-		if hits == 0 {
-			return Black
-		}
-	}
-
-	// If we're here then our attempts at saving time failed... sample the area using a jittered stratified sampler
-	usamples := float64(rt.world.Options.AreaLightSamples)
-	vsamples := float64(rt.world.Options.AreaLightSamples)
+// LightenHitWithJitteredStratified samples the area with a jittered stratified sampler
+func (light *RectLight) LightenHitWithJitteredStratified(ii *IntersectionInfo, rt *Raytracer, samples float64) (result Color) {
+	usamples, vsamples := samples, samples
 
 	usize := 1 / usamples
 	vsize := 1 / vsamples
@@ -283,6 +200,78 @@ func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result 
 	}
 
 	return result.Mul(usize * vsize)
+}
+
+// LightenHitWithAdaptiveSampling recursively splits the area in two parts
+// and tries to spend more samples in "difficult" zones where the variance is higher:
+// it usually gives acceptable results very quickly and good results quite
+// faster than the jittered sampler anyway
+func (light *RectLight) LightenHitWithAdaptiveSampling(ii *IntersectionInfo, rt *Raytracer, minDepth, maxDepth int) (result Color) {
+	// This evaluates a point light placed at position (u,v)
+	// of the light surface and cast on the intersection point
+	sample := func(u, v float64) Color {
+		pos := light.Pos.Add(light.Uv.Mul(u)).Add(light.Vv.Mul(v))
+
+		if IsShadowed(pos, rt, ii.OverPoint) {
+			return Black
+		}
+
+		lightv := pos.Sub(ii.Point).Normalize() // Direction to the light source
+
+		return LightenHit(lightv, light.Intensity, ii)
+	}
+
+	var estimateArea func(u, v, w, h float64, p0, p1, p2, p3 Color, depth int) Color
+
+	estimateArea = func(u, v, w, h float64, p0, p1, p2, p3 Color, depth int) Color {
+		// We use IsBlack() as a cheap IsShadowed() here
+		fs := p0.IsBlack() + p1.IsBlack() + p2.IsBlack() + p3.IsBlack()
+
+		// Interrupt the recursion if either at max depth or past the minimum depth with all samples in agreement
+		if depth >= maxDepth || ((fs == 0 || fs == 4) && depth >= minDepth) {
+			c := p0.Add(p1).Add(p2).Add(p3)
+
+			// If there is already a majority, return now: this provided a small but measurable improvement in my tests
+			if fs != 2 {
+				return c.Mul(w * h / 4)
+			}
+
+			// Since the jury is split, get one last sample in the middle and make it count:
+			// this is another idea that seemed to work quite well in tests
+			c = c.Add(sample(u+w/2, v+h/2).Mul(4))
+
+			return c.Mul(w * h / 8)
+		} else {
+			// Need more information, split the rectangle at the longest edge
+			if w > h || (w == h && p0.IsBlack() == p2.IsBlack()) {
+				w = w / 2
+				pa := sample(u+w, v)
+				pe := sample(u+w, v+h)
+				c1 := estimateArea(u, v, w, h, p0, pa, p2, pe, depth+1)
+				c2 := estimateArea(u+w, v, w, h, pa, p1, pe, p3, depth+1)
+				return c1.Add(c2)
+			} else {
+				h = h / 2
+				pb := sample(u, v+h)
+				pd := sample(u+w, v+h)
+				c3 := estimateArea(u, v, w, h, p0, p1, pb, pd, depth+1)
+				c4 := estimateArea(u, v+h, w, h, pb, pd, p2, p3, depth+1)
+				return c3.Add(c4)
+			}
+		}
+	}
+
+	result = estimateArea(0, 0, 1, 1, sample(0, 0), sample(0, 1), sample(1, 0), sample(1, 1), 0)
+
+	return result
+}
+
+func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result Color) {
+	if false {
+		return light.LightenHitWithJitteredStratified(ii, rt, float64(rt.world.Options.AreaLightSamples))
+	} else {
+		return light.LightenHitWithAdaptiveSampling(ii, rt, 5, 9)
+	}
 }
 
 func NewDirectionalLight(dir Tuple, intensity Color) *DirectionalLight {

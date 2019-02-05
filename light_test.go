@@ -69,12 +69,20 @@ func TestRectLight(t *testing.T) {
 	floor := NewPlane()
 
 	s1 := NewSphere()
-	s1.SetTransform(Translation(0, 1, 0))
+	s1.SetTransform(Translation(0, 1, 2))
 	s1.SetMaterial(NewMaterial().SetDiffuseColor(CSS("orange")).SetDiffuse(1))
 
 	s2 := NewSphere()
-	s2.SetTransform(Translation(-2.5, 1, 0))
+	s2.SetTransform(Translation(-2.5, 1, 6))
 	s2.SetMaterial(NewMaterial().SetDiffuseColor(CSS("dodgerblue")).SetDiffuse(1))
+
+	s3 := NewSphere()
+	s3.SetTransform(Translation(1.5, 1, -1))
+	s3.SetMaterial(NewMaterial().SetDiffuseColor(CSS("mediumspringgreen")).SetDiffuse(1))
+
+	pole := NewCylinder(0, 2, true)
+	pole.SetTransform(Scaling(0.1, 1, 0.1), Translation(-35, 0, 30))
+	pole.SetMaterial(NewMaterial().SetDiffuseColor(CSS("crimson")).SetDiffuse(1))
 
 	light := NewRectLight(RGB(1, 1, 1).Mul(0.9))
 	light.SetSize(2, 2)
@@ -83,12 +91,13 @@ func TestRectLight(t *testing.T) {
 	world := NewWorld()
 	world.SetAmbient(Gray(0.05))
 
-	world.AddObjects(floor, s1, s2)
+	world.AddObjects(floor, s1, s2, s3, pole)
 
 	world.AddLights(light)
 
 	camera := NewCamera(640, 320, Pi/3)
 	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -5), Point(0, 1, 0), Vector(0, 1, 0)))
+	// Good parameters for blur: LensRadius=0.2, FocalDistance=7, Supersampling=4
 
 	world.RenderToPNG(camera, "test_rect_light.png")
 }

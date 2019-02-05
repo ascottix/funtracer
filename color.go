@@ -37,6 +37,13 @@ func (c Color) RGBA() (r, g, b, a uint32) {
 	return
 }
 
+func (c Color) IsBlack() int32 {
+	if c.R == 0 && c.G == 0 && c.B == 0 {
+		return 1
+	}
+	return 0
+}
+
 func (c Color) Equals(d Color) bool {
 	return FloatEqual(c.R, d.R) && FloatEqual(c.G, d.G) && FloatEqual(c.B, d.B)
 }
