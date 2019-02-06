@@ -221,11 +221,18 @@ func (light *RectLight) LightenHitWithAdaptiveSampling(ii *IntersectionInfo, rt 
 		return LightenHit(lightv, light.Intensity, ii)
 	}
 
-	var estimateArea func(u, v, w, h float64, p0, p1, p2, p3 Color, depth int) Color
+	var estimateArea func(u, v, w, h float64, p0, p1, p2, p3 Color, depth int, ok bool) Color
 
-	estimateArea = func(u, v, w, h float64, p0, p1, p2, p3 Color, depth int) Color {
+	estimateArea = func(u, v, w, h float64, p0, p1, p2, p3 Color, depth int, ok bool) Color {
 		// We use IsBlack() as a cheap IsShadowed() here
 		fs := p0.IsBlack() + p1.IsBlack() + p2.IsBlack() + p3.IsBlack()
+
+		ok = ok && (fs == 0 || fs == 4)
+
+		// If we have enough samples and found no variance so far, exit early... this seems to work really well!
+		if ok && depth >= 3 && depth >= minDepth-2 {
+			depth = maxDepth
+		}
 
 		// Interrupt the recursion if either at max depth or past the minimum depth with all samples in agreement
 		if depth >= maxDepth || ((fs == 0 || fs == 4) && depth >= minDepth) {
@@ -247,21 +254,21 @@ func (light *RectLight) LightenHitWithAdaptiveSampling(ii *IntersectionInfo, rt 
 				w = w / 2
 				pa := sample(u+w, v)
 				pe := sample(u+w, v+h)
-				c1 := estimateArea(u, v, w, h, p0, pa, p2, pe, depth+1)
-				c2 := estimateArea(u+w, v, w, h, pa, p1, pe, p3, depth+1)
+				c1 := estimateArea(u, v, w, h, p0, pa, p2, pe, depth+1, ok)
+				c2 := estimateArea(u+w, v, w, h, pa, p1, pe, p3, depth+1, ok)
 				return c1.Add(c2)
 			} else {
 				h = h / 2
 				pb := sample(u, v+h)
 				pd := sample(u+w, v+h)
-				c3 := estimateArea(u, v, w, h, p0, p1, pb, pd, depth+1)
-				c4 := estimateArea(u, v+h, w, h, pb, pd, p2, p3, depth+1)
+				c3 := estimateArea(u, v, w, h, p0, p1, pb, pd, depth+1, ok)
+				c4 := estimateArea(u, v+h, w, h, pb, pd, p2, p3, depth+1, ok)
 				return c3.Add(c4)
 			}
 		}
 	}
 
-	result = estimateArea(0, 0, 1, 1, sample(0, 0), sample(0, 1), sample(1, 0), sample(1, 1), 0)
+	result = estimateArea(0, 0, 1, 1, sample(0, 0), sample(0, 1), sample(1, 0), sample(1, 1), 0, true)
 
 	return result
 }

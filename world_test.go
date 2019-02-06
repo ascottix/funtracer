@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SkipAllTestsWithImages = false
+	SkipAllTestsWithImages = true
 )
 
 func TestWithImage(t *testing.T) {
