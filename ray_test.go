@@ -193,8 +193,9 @@ func TestLightSphereImage(t *testing.T) {
 			xs := s.Intersect(ray)       // Get intersections
 			hit := xs.Hit()              // Get hit if any
 			if hit.Valid() {
-				point := ray.Position(hit.T)               // Point hit by the ray
-				normal := hit.O.NormalAtEx(point, xs, hit) // Normal to the surface in the hit point
+				point := ray.Position(hit.T) // Point hit by the ray
+				ii := IntersectionInfo{Intersection: hit, Point: point}
+				normal := hit.O.NormalAtHit(&ii, xs) // Normal to the surface in the hit point
 				eye := dir.Neg()
 				color, _ := Lighten(light, hit.O, point, eye, normal, false)
 				img.Set(x, h-1-y, color)

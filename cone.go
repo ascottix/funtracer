@@ -106,3 +106,7 @@ func (p *Cone) LocalNormalAt(point Tuple) Tuple {
 
 	return Vector(point.X, y, point.Z)
 }
+
+func (p *Cone) NormalAtHit(point Tuple, ii *IntersectionInfo) Tuple {
+	return p.LocalNormalAt(point)
+}

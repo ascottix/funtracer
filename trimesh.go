@@ -169,13 +169,13 @@ func (t *MeshTriangle) AddIntersections(ray Ray, xs *Intersections) {
 	id.tV = v
 }
 
-func (t *MeshTriangle) NormalAtEx(point Tuple, xs *Intersections, i Intersection) Tuple {
+func (t *MeshTriangle) NormalAtHit(ii *IntersectionInfo, xs *Intersections) Tuple {
 	if len(t.mesh.VN) == 0 {
 		return t.mesh.NormalToWorld(t.N) // Flat normal
 	}
 	// ...else interpolate
 
-	id := xs.Data(i)
+	id := xs.Data(&ii.Intersection)
 
 	N1 := t.mesh.VN[t.VN[0]]
 	N2 := t.mesh.VN[t.VN[1]]

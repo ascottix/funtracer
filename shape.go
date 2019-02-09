@@ -9,6 +9,7 @@ type Shapable interface {
 	Bounds() Box
 	LocalNormalAt(Tuple) Tuple
 	LocalIntersect(Ray) []float64
+	NormalAtHit(Tuple, *IntersectionInfo) Tuple
 }
 
 // Shape is an higher level object that represents a geometric primitive,
@@ -89,16 +90,25 @@ func (s *Shape) AddIntersections(ray Ray, xs *Intersections) {
 	xs.Add(s, localxs...)
 }
 
+// NormalAt returns the normal at the specified point on this shape,
+// it has been replaced by NormalAtHit() and now used only for tests.
 func (s *Shape) NormalAt(point Tuple) Tuple {
-	point = s.WorldToObject(point)
+	ii := IntersectionInfo{Point: point}
 
-	normal := s.shapable.LocalNormalAt(point)
-
-	return s.NormalToWorld(normal)
+	return s.NormalAtHit(&ii, nil)
 }
 
-func (s *Shape) NormalAtEx(point Tuple, xs *Intersections, i Intersection) Tuple {
-	return s.NormalAt(point)
+// NormalAtHit returns the normal at an intersection point on this shape,
+// it may also fill other information in the IntersectionInfo (e.g. the u,v surface coords)
+func (s *Shape) NormalAtHit(ii *IntersectionInfo, xs *Intersections) Tuple {
+	// Convert the point into object space, so it can be handled by the simple primitive
+	point := s.WorldToObject(ii.Point)
+
+	// Get the normal in object space, may fill other info as well
+	normal := s.shapable.NormalAtHit(point, ii)
+
+	// Return the normal in world space
+	return s.NormalToWorld(normal)
 }
 
 // Make a shape a Shapable object itself

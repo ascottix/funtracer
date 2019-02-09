@@ -29,34 +29,25 @@ func NewIntersectionInfo(i Intersection, r Ray, xs *Intersections) *Intersection
 }
 
 func (ii *IntersectionInfo) Update(i Intersection, r Ray, xs *Intersections) {
-	p := r.Position(i.T)
-	e := r.Direction.Neg()
-	n := i.O.NormalAtEx(p, xs, i)
-	f := n.DotProduct(e) < 0 // If the normal points away from the eye direction, it means the eye is inside the object
+	// Fill in the basic information
+	ii.Intersection = i
+	ii.Point = r.Position(i.T)
+	ii.Eyev = r.Direction.Neg()
 
-	if f {
+	n := i.O.NormalAtHit(ii, xs) // Get the normal at the intersection, necessary for all code that follows
+
+	ii.Inside = n.DotProduct(ii.Eyev) < 0 // If the normal points away from the eye direction, it means the eye is inside the object
+
+	if ii.Inside {
 		n = n.Neg()
 	}
 
-	// Bump the point a little bit in the normal direction and save this new point too,
-	// this addresses the issue of objects sometimes casting a shadow on themselves
-	// (because of floating point precision)
-	o := p.Add(n.Mul(Epsilon))
-
-	// Same but place the point slightly below the surface
-	u := p.Sub(n.Mul(Epsilon))
-
-	// Fill in the information
-	ii.Intersection = i
-	ii.Point = p
-	ii.OverPoint = o
-	ii.UnderPoint = u
-	ii.Eyev = e
+	ii.OverPoint = ii.Point.Add(n.Mul(Epsilon)) // Used to avoid objects casting shadows on themselves
+	ii.UnderPoint = ii.Point.Sub(n.Mul(Epsilon))
 	ii.Normalv = n
 	ii.Reflectv = r.Direction.Reflect(n)
 	ii.N1 = 1
 	ii.N2 = 1
-	ii.Inside = f
 
 	// Handle refraction
 	if xs != nil && i.O.Material().RefractLevel > 0 {

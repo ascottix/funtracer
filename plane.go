@@ -33,3 +33,7 @@ func (p *Plane) LocalIntersect(ray Ray) []float64 {
 func (p *Plane) LocalNormalAt(point Tuple) Tuple {
 	return Vector(0, 1, 0) // Plane is always on the x and z axis, so normal does not depend on point
 }
+
+func (p *Plane) NormalAtHit(point Tuple, ii *IntersectionInfo) Tuple {
+	return p.LocalNormalAt(point)
+}

@@ -94,3 +94,7 @@ func (p *Cylinder) LocalNormalAt(point Tuple) Tuple {
 
 	return Vector(point.X, 0, point.Z)
 }
+
+func (p *Cylinder) NormalAtHit(point Tuple, ii *IntersectionInfo) Tuple {
+	return p.LocalNormalAt(point)
+}

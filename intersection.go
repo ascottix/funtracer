@@ -13,7 +13,7 @@ type Patternable interface {
 }
 
 type Intersectable interface {
-	NormalAtEx(point Tuple, xs *Intersections, i Intersection) Tuple
+	NormalAtHit(ii *IntersectionInfo, xs *Intersections) Tuple
 }
 
 type Hittable interface {
@@ -32,8 +32,8 @@ type IntersectionData struct {
 	// Used by CSG
 	Lhit bool
 	// Used by Trimesh
-	tU   float64
-	tV   float64
+	tU float64
+	tV float64
 }
 
 type Intersections struct {
@@ -129,11 +129,11 @@ func (x *Intersections) AddWithData(o Hittable, t float64) *IntersectionData {
 	i := Intersection{T: t, O: o, D: len(x.data)}
 	add(x, i)
 
-	return x.Data(i)
+	return x.Data(&i)
 }
 
 // Data returns a pointer to the data associated with an intersection, it may return nil
-func (x *Intersections) Data(i Intersection) (d *IntersectionData) {
+func (x *Intersections) Data(i *Intersection) (d *IntersectionData) {
 	if i.D > 0 {
 		d = &x.data[i.D-1]
 	}

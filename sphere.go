@@ -43,3 +43,14 @@ func (s *Sphere) LocalNormalAt(point Tuple) Tuple {
 
 	return point
 }
+
+func (s *Sphere) NormalAtHit(point Tuple, ii *IntersectionInfo) Tuple {
+	// Compute (u,v) coordinates of point
+	theta := math.Atan2(point.Z, point.X) + Pi
+	phi := math.Acos(point.Y)
+
+	ii.U = theta / (2 * Pi)
+	ii.V = phi / Pi
+
+	return s.LocalNormalAt(point)
+}

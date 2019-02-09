@@ -70,3 +70,9 @@ func (p *Cube) LocalNormalAt(point Tuple) Tuple {
 		return Vector(0, 0, point.Z)
 	}
 }
+
+func (p *Cube) NormalAtHit(point Tuple, ii *IntersectionInfo) Tuple {
+	n := p.LocalNormalAt(point)
+
+	return n
+}
