@@ -32,7 +32,6 @@ type IntersectionData struct {
 	// Used by CSG
 	Lhit bool
 	// Used by Trimesh
-	tIdx int
 	tU   float64
 	tV   float64
 }
@@ -46,7 +45,7 @@ type Intersections struct {
 }
 
 func NewIntersection(t float64, o Hittable) Intersection {
-	return Intersection{t, o, 0}
+	return Intersection{T: t, O: o, D: 0}
 }
 
 func (i Intersection) Valid() bool {
@@ -118,7 +117,7 @@ func add(x *Intersections, i Intersection) {
 
 func (x *Intersections) Add(o Hittable, t ...float64) *Intersections {
 	for _, v := range t {
-		i := Intersection{v, o, 0}
+		i := Intersection{T: v, O: o, D: 0}
 		add(x, i)
 	}
 
@@ -127,7 +126,7 @@ func (x *Intersections) Add(o Hittable, t ...float64) *Intersections {
 
 func (x *Intersections) AddWithData(o Hittable, t float64) *IntersectionData {
 	x.data = append(x.data, IntersectionData{})
-	i := Intersection{t, o, len(x.data)}
+	i := Intersection{T: t, O: o, D: len(x.data)}
 	add(x, i)
 
 	return x.Data(i)
