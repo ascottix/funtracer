@@ -47,6 +47,10 @@ func DegToRad(f float64) float64 {
 	return f * 0.0174533
 }
 
+func Clamp(f float64) float64 {
+	return math.Max(0, math.Min(f, 1))
+}
+
 // Utilities
 func Square(f float64) float64 {
 	return f * f
