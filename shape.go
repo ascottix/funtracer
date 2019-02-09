@@ -4,12 +4,15 @@
 
 package main
 
+// Shapable provides the basic geometry of a primitive shape
 type Shapable interface {
 	Bounds() Box
 	LocalNormalAt(Tuple) Tuple
 	LocalIntersect(Ray) []float64
 }
 
+// Shape is an higher level object that represents a geometric primitive,
+// it uses the Shapable interface for anything related to the shape geometry
 type Shape struct {
 	Namer
 	Grouper
