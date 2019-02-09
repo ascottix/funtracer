@@ -207,7 +207,21 @@ func (light *RectLight) LightenHitWithJitteredStratified(ii *IntersectionInfo, r
 // it usually gives acceptable results very quickly and good results quite
 // faster than the jittered sampler anyway
 func (light *RectLight) LightenHitWithAdaptiveSampling(ii *IntersectionInfo, rt *Raytracer, minDepth, maxDepth int) (result Color) {
-	// This evaluates a point light placed at position (u,v)
+	// Evaluates how important this light is on the overall point color
+	influence := func(u, v float64) float64 {
+		pos := light.Pos.Add(light.Uv.Mul(u)).Add(light.Vv.Mul(v))
+		lightv := pos.Sub(ii.Point).Normalize() // Direction to the light source
+		res := lightv.DotProduct(ii.Normalv)    // cosTheta, i.e. how much light strikes the point
+		if res >= 0 {
+			// Evaluate the specular component
+			halfv := lightv.Add(ii.Eyev).Normalize()
+			nDotH := ii.Normalv.DotProduct(halfv)
+			res = math.Max(res, ii.O.Material().Specular*math.Pow(nDotH, 4*ii.O.Material().Shininess))
+		}
+		return res
+	}
+
+	// Evaluates a point light placed at position (u,v)
 	// of the light surface and cast on the intersection point
 	sample := func(u, v float64) Color {
 		pos := light.Pos.Add(light.Uv.Mul(u)).Add(light.Vv.Mul(v))
@@ -268,6 +282,16 @@ func (light *RectLight) LightenHitWithAdaptiveSampling(ii *IntersectionInfo, rt 
 		}
 	}
 
+	// If the light doesn't have much of an influence on the point color, don't sample it too accurately
+	weight := math.Max(influence(0, 0), math.Max(influence(0, 1), math.Max(influence(1, 0), influence(1, 1))))
+
+	// A conservative setup could be weight < 0.1 and divide by 2,
+	// an aggressive setup will use something like weight < 0.2 and divide by 3
+	if weight < 0.1 {
+		minDepth /= 2
+		maxDepth /= 2
+	}
+
 	result = estimateArea(0, 0, 1, 1, sample(0, 0), sample(0, 1), sample(1, 0), sample(1, 1), 0, true)
 
 	return result
@@ -275,7 +299,7 @@ func (light *RectLight) LightenHitWithAdaptiveSampling(ii *IntersectionInfo, rt 
 
 func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result Color) {
 	if false {
-		return light.LightenHitWithJitteredStratified(ii, rt, float64(rt.world.Options.AreaLightSamples))
+		return light.LightenHitWithJitteredStratified(ii, rt, 16+0*float64(rt.world.Options.AreaLightSamples))
 	} else {
 		return light.LightenHitWithAdaptiveSampling(ii, rt, 5, 9)
 	}

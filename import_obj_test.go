@@ -248,10 +248,12 @@ func TestObjTeapot(t *testing.T) {
 	camera := NewCamera(400*2, 200*2, 1)
 	camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(0, 0.5, 0), Vector(0, 1, 0)))
 
-	// Zoom on shadow
+	// Zoom on shadow (for testing the adaptive area light heuristics)
 	if false {
-		camera.SetFieldOfView(0.5)
-		camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(1.5, 0, 0), Vector(0, 1, 0)))
+		// At fov=0.3 there's a lot of shadow in the scene, even a 16x16 sampler cannot render
+		// it correctly... use a minDepth of 7 for the adaptive sampler
+		camera.SetFieldOfView(0.3)
+		camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(2.5, -0.75, 0), Vector(0, 1, 0)))
 	}
 
 	world.RenderToPNG(camera, "test_obj_teapot.png")
