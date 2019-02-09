@@ -10,7 +10,7 @@ type MaterialParams struct {
 
 type Material struct {
 	MaterialParams
-	Pattern      Pattern
+	Texture      Texture
 	Ambient      float64 // Ka
 	Diffuse      float64 // Kd
 	Roughness    float64 // Diffuse roughness (i.e. sigma in the Oren-Nayar model)
@@ -48,8 +48,8 @@ func NewMaterial() *Material {
 func (m *Material) GetParamsAt(ii *IntersectionInfo) {
 	ii.Mat = m.MaterialParams
 
-	if m.Pattern != nil {
-		ii.Mat.DiffuseColor = m.Pattern.ColorAt(ii.O, ii.Point)
+	if m.Texture != nil {
+		m.Texture.ApplyAtHit(ii)
 	}
 }
 
@@ -71,9 +71,9 @@ func (m *Material) SetDiffuse(v float64) *Material {
 	return m
 }
 
-func (m *Material) SetPattern(p Pattern) *Material {
+func (m *Material) SetPattern(p Texture) *Material {
 	// Pattern describes the appearance of the material
-	m.Pattern = p
+	m.Texture = p
 	return m
 }
 
@@ -111,6 +111,19 @@ func (m *Material) SetShininess(v float64) *Material {
 func (m *Material) SetSpecular(v float64) *Material {
 	// Specular controls the intensity of the light that is reflected directly towards the eye
 	m.Specular = v
+	return m
+}
+
+func (m *Material) ProxifyPatterns(g Patternable) *Material {
+	// TODO: should we clone the material?!
+
+	if m.Texture != nil {
+		if t, ok := m.Texture.(Pattern); ok {
+			p := NewProxyPattern(g, t)
+			m.SetPattern(p)
+		}
+	}
+
 	return m
 }
 

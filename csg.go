@@ -156,8 +156,7 @@ func (g *Csg) AddIntersections(ray Ray, xs *Intersections) {
 }
 
 func (g *Csg) SetMaterial(m *Material) {
-	p := NewProxyPattern(g, m.Pattern)
-	m.SetPattern(p)
+	m = m.ProxifyPatterns(g)
 
 	g.L.SetMaterial(m)
 	g.R.SetMaterial(m)

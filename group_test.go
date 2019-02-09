@@ -103,8 +103,9 @@ func createHexagonScene() *Scene {
 
 	material := func() *Material {
 		m := NewMaterial()
-		m.SetPattern(WhiteLinesPattern())
-		m.Pattern.SetTransform(Scaling(0.6))
+		p := WhiteLinesPattern()
+		p.SetTransform(Scaling(0.6))
+		m.SetPattern(p)
 		return m
 	}
 

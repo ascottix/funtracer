@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SkipAllTestsWithImages = false
+	SkipAllTestsWithImages = true
 )
 
 func TestWithImage(t *testing.T) {
@@ -402,8 +402,9 @@ func TestWorldSimpleRefractScene(t *testing.T) {
 	world := NewWorld()
 
 	floor := NewPlane()
-	floor.Material().SetPattern(NewCheckerPattern(Black, White))
-	floor.Material().Pattern.SetTransform(Translation(0, 0.1, 0))
+	pattern := NewCheckerPattern(Black, White)
+	pattern.SetTransform(Translation(0, 0.1, 0))
+	floor.Material().SetPattern(pattern)
 	floor.SetTransform(Translation(0, -10.1, 0))
 
 	sphere := NewSphere()

@@ -131,3 +131,98 @@ func TestDepthOfField(t *testing.T) {
 
 	world.RenderToPNG(camera, "test_depth_of_field.png")
 }
+
+func applyTexture(s *Shape, filename string) bool {
+	txt := NewImageTexture()
+	err := txt.LoadFromFile(filename)
+	if err == nil {
+		s.Material().SetPattern(txt).SetSpecular(0)
+	} else {
+		Debugln("Cannot load texture: ", filename)
+	}
+
+	return err == nil
+}
+
+func TestTextures(t *testing.T) {
+	t.SkipNow() // Test works but needs the texture files
+
+	s1 := NewSphere()
+	s1.SetTransform(Scaling(1.2), RotationX(Pi/2))
+	applyTexture(s1, "../textures/ash_uvgrid01.jpg")
+
+	light := NewPointLight(Point(0, 4, -4), RGB(1, 1, 1).Mul(0.9))
+
+	world := NewWorld()
+	world.SetAmbient(Gray(0.1))
+
+	world.AddObjects(s1)
+
+	world.AddLights(light)
+
+	camera := NewCamera(300*4, 300*4, Pi/4)
+	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -4), Point(0, 0, 0), Vector(0, 1, 0)))
+
+	world.RenderToPNG(camera, "test_textures.png")
+}
+
+func TestPlanets(t *testing.T) {
+	t.SkipNow() // Test works but needs the texture files
+
+	ok := true
+
+	// These wonderful textures come from https://www.solarsystemscope.com/textures/
+
+	// Universe
+	s0 := NewSphere()
+	s0.SetTransform(Scaling(6), RotationZ(Pi/3))
+
+	ok = ok && applyTexture(s0, "../textures/2k_stars.jpg")
+
+	// Mars
+	s1 := NewSphere()
+	s1.SetTransform(Translation(-1, -0.5, 0))
+	s1.SetShadow(false)
+
+	ok = ok && applyTexture(s1, "../textures/2k_mars.jpg")
+
+	// Earth
+	s2 := NewSphere()
+	s2.SetTransform(Translation(0.2, -0.3, 1.5), RotationY(Pi/1.5))
+	s2.SetShadow(false)
+
+	ok = ok && applyTexture(s2, "../textures/2k_earth_daymap.jpg")
+
+	// Jupiter
+	s3 := NewSphere()
+	s3.SetTransform(Translation(1.7, 0, 3), RotationY(Pi/6))
+	s3.SetShadow(false)
+
+	ok = ok && applyTexture(s3, "../textures/2k_jupiter.jpg")
+
+	// Moon
+	s4 := NewSphere()
+	s4.SetTransform(Scaling(0.25), Translation(-5, 1.5, 12.5), RotationY(Pi-Pi/1.5), RotationX(-Pi/8))
+	s4.SetShadow(false)
+
+	ok = ok && applyTexture(s4, "../textures/2k_moon.jpg")
+
+	if !ok {
+		Debugln("Skipping test because of missing textures")
+		return
+	}
+
+	light := NewPointLight(Point(0, 4, -4), RGB(1, 1, 1).Mul(0.9))
+
+	world := NewWorld()
+	world.SetAmbient(Gray(0.1))
+
+	world.AddObjects(s0, s1, s2, s3, s4)
+
+	world.AddLights(light)
+
+	camera := NewCamera(300*4, 300*4, Pi/4)
+	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -4), Point(-0.15, 0, 0), Vector(0, 1, 0)))
+
+	world.RenderToPNG(camera, "test_planets.png")
+}

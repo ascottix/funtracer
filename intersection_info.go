@@ -6,6 +6,7 @@ package main
 
 type IntersectionInfo struct {
 	Intersection
+	U, V       float64        // Surface coordinates of intersection point
 	Point      Tuple          // Intersection point
 	OverPoint  Tuple          // Intersection point adjusted a bit in the normal direction (over the surface), used for shadows
 	UnderPoint Tuple          // Intersection point adjusted a bit in the opposide normal direction (under the surface), used for refractions

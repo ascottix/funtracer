@@ -68,12 +68,13 @@ func TestIntersectionFooBar(t *testing.T) {
 
 	back := NewPlane()
 	back.SetTransform(RotationX(Pi/2), Translation(0, 5, 0))
-	back.Material().SetPattern(NewCheckerPattern(Gray(0.7), Gray(0.9))).SetSpecular(0)
-	back.Material().Pattern.SetTransform(Translation(0, 0.1, 0), Scaling(0.7))
+	pattern := NewCheckerPattern(Gray(0.7), Gray(0.9))
+	pattern.SetTransform(Translation(0, 0.1, 0), Scaling(0.7))
+	back.Material().SetPattern(pattern).SetSpecular(0)
 
 	floor := NewPlane()
 	floor.SetTransform(Translation(0, -1, 0))
-	floor.Material().SetPattern(back.Material().Pattern)
+	floor.Material().SetPattern(pattern)
 
 	world.AddObjects(back, floor)
 

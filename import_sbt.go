@@ -373,8 +373,6 @@ func ParseSbtScene(reader io.Reader, options *SbtParserOptions) (scene *Scene, e
 
 	parseMaterial := func() (m *Material, name string) {
 		if check("{") {
-			var p Pattern
-
 			m = NewMaterial()
 
 			m.SetAmbient(defaultMaterial.Ambient)
@@ -388,24 +386,20 @@ func ParseSbtScene(reader io.Reader, options *SbtParserOptions) (scene *Scene, e
 				case check("name"):
 					name = parseString()
 				case check("pattern"):
-					p = parsePattern()
+					p := parsePattern()
+					m.SetPattern(p)
 				case check("diffuse"):
-					// Try to support both the original format and our modifications
-					if p == nil {
-						match('=')
-						p = NewSolidColorPattern(parseColor())
-						d := 1.0
-						if check("*") {
-							d = matchFloat()
-							match(';')
-						} else {
-							check(";")
-						}
-						m.SetDiffuse(d)
+					match('=')
+					c := parseColor()
+					d := 1.0
+					if check("*") {
+						d = matchFloat()
+						match(';')
 					} else {
-						d, _, _ := parseTuple() // Only one component supported
-						m.SetDiffuse(d)
+						check(";")
 					}
+					m.SetDiffuseColor(c)
+					m.SetDiffuse(d)
 				case check("specular"):
 					s, _, _ := parseTuple() // Only one component supported
 					m.SetSpecular(s)
@@ -426,11 +420,6 @@ func ParseSbtScene(reader io.Reader, options *SbtParserOptions) (scene *Scene, e
 					raise()
 				}
 			}
-
-			if p == nil {
-				p = defaultMaterial.Pattern
-			}
-			m.SetPattern(p)
 
 			check(";")
 		} else {

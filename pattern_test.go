@@ -85,9 +85,10 @@ func TestPatternScene(t *testing.T) {
 	}
 
 	floor := NewPlane()
-	floor.Material().SetPattern(NewCheckerPattern(White, RGB(1, 0.3, 0.3)))
+	p := NewCheckerPattern(White, RGB(1, 0.3, 0.3))
+	p.SetTransform(Translation(0, 0.1, 0)) // Bump pattern a little bit to avoid "pattern acne"
+	floor.Material().SetPattern(p)
 	floor.Material().SetReflective(0.2)
-	floor.Material().Pattern.SetTransform(Translation(0, 0.1, 0)) // Bump pattern a little bit to avoid "pattern acne"
 
 	wall := NewPlane()
 	wall.Material().SetPattern(NewSolidColorPattern(RGB(0.4, 0.5, 0.5)))
@@ -126,19 +127,22 @@ func createReflectionsAndRefractionsScene() *Scene {
 	world.AddLights(light)
 
 	wallMaterial := NewMaterial()
-	wallMaterial.SetPattern(NewStripePattern(Gray(0.45), Gray(0.55)))
-	wallMaterial.Pattern.SetTransform(Scaling(0.25, 0.25, 0.25), RotationY(1.5708))
+	patt0 := NewStripePattern(Gray(0.45), Gray(0.55))
+	patt0.SetTransform(Scaling(0.25, 0.25, 0.25), RotationY(1.5708))
+	wallMaterial.SetPattern(patt0)
 	wallMaterial.SetAmbient(0).SetDiffuse(0.4).SetSpecular(0).SetReflective(0.3)
 
 	floor := NewPlane()
 	floor.SetTransform(RotationY(0.31415))
-	floor.Material().SetPattern(NewCheckerPattern(Gray(0.65), Gray(0.35)))
-	floor.Material().Pattern.SetTransform(Translation(0, 0.1, 0))
+	patt1 := NewCheckerPattern(Gray(0.65), Gray(0.35))
+	patt1.SetTransform(Translation(0, 0.1, 0))
+	floor.Material().SetPattern(patt1)
 	floor.Material().SetSpecular(0).SetReflective(0.4)
 
 	ceiling := NewPlane()
 	ceiling.SetTransform(Translation(0, 5, 0))
-	ceiling.Material().SetPattern(NewSolidColorPattern(RGB(0.8, 0.8, 0.8)))
+	patt2 := NewSolidColorPattern(RGB(0.8, 0.8, 0.8))
+	ceiling.Material().SetPattern(patt2)
 	ceiling.Material().SetSpecular(0).SetAmbient(0.3)
 
 	westWall := NewPlane()
@@ -227,14 +231,16 @@ func TestSceneWithBoundingBoxes(t *testing.T) {
 	world.AddLights(light)
 
 	wallMaterial := NewMaterial()
-	wallMaterial.SetPattern(NewStripePattern(Gray(0.45), Gray(0.55)))
-	wallMaterial.Pattern.SetTransform(Scaling(0.25, 0.25, 0.25), RotationY(1.5708))
+	patt0 := NewStripePattern(Gray(0.45), Gray(0.55))
+	patt0.SetTransform(Scaling(0.25, 0.25, 0.25), RotationY(1.5708))
+	wallMaterial.SetPattern(patt0)
 	wallMaterial.SetAmbient(0).SetDiffuse(0.4).SetSpecular(0).SetReflective(0.3)
 
 	floor := NewPlane()
 	floor.SetTransform(RotationY(0.31415))
-	floor.Material().SetPattern(NewCheckerPattern(Gray(0.65), Gray(0.35)))
-	floor.Material().Pattern.SetTransform(Translation(0, 0.1, 0))
+	patt1 := NewCheckerPattern(Gray(0.65), Gray(0.35))
+	patt1.SetTransform(Translation(0, 0.1, 0))
+	floor.Material().SetPattern(patt1)
 	floor.Material().SetSpecular(0).SetReflective(0.4)
 
 	ceiling := NewPlane()

@@ -8,8 +8,13 @@ import (
 	"math"
 )
 
+type Texture interface {
+	ApplyAtHit(ii *IntersectionInfo)
+}
+
 type Pattern interface {
 	Transformable
+	Texture
 	PatternAt(point Tuple) Color
 	ColorAt(object Patternable, point Tuple) Color
 }
@@ -54,6 +59,10 @@ func (p *ProxyPattern) ColorAt(object Patternable, point Tuple) Color {
 	return p.P.ColorAt(p.O, point)
 }
 
+func (p *ProxyPattern) ApplyAtHit(ii *IntersectionInfo) {
+	ii.Mat.DiffuseColor = p.P.ColorAt(ii.O, ii.Point)
+}
+
 func NewBasicPattern(localPatternAt LocalPatternAt) Pattern {
 	p := &BasicPattern{LocalPatternAt: localPatternAt}
 	p.SetTransform()
@@ -69,6 +78,10 @@ func (p *BasicPattern) ColorAt(object Patternable, point Tuple) Color {
 	objectPoint := object.WorldToObject(point)   // Convert from world to object space
 	patternPoint := p.Tinverse.MulT(objectPoint) // Convert from object to pattern space
 	return p.LocalPatternAt(patternPoint)
+}
+
+func (p *BasicPattern) ApplyAtHit(ii *IntersectionInfo) {
+	ii.Mat.DiffuseColor = p.ColorAt(ii.O, ii.Point)
 }
 
 func NewSolidColorPattern(c Color) Pattern {
