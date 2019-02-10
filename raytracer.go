@@ -43,13 +43,13 @@ func (rt *Raytracer) ShadeHit(ii *IntersectionInfo, depth int) (c Color) {
 
 	material.GetParamsAt(ii)
 
-	c = ii.Mat.DiffuseColor.Blend(rt.world.Ambient.Mul(material.Ambient))
+	m := ii.Mat
+
+	c = m.DiffuseColor.Blend(rt.world.Ambient.Mul(material.Ambient))
 
 	for _, light := range rt.world.Lights {
 		c = c.Add(light.LightenHit(ii, rt))
 	}
-
-	m := ii.O.Material()
 
 	if depth > 0 {
 		if m.ReflectLevel > 0 {

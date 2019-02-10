@@ -16,6 +16,10 @@ import (
 
 type TextureWrap int
 
+// Extension point to allow custom processing
+type TextureOnTexel func(c Tuple) Tuple                      // Triggers after a texel is read from the texture
+type TextureOnApply func(c Tuple, ii *IntersectionInfo) bool // Triggers before color is applied to hit, returns true to prevent default processing
+
 const (
 	TwPeriodic TextureWrap = iota
 	TwClamp
@@ -23,8 +27,10 @@ const (
 )
 
 type ImageTexture struct {
-	image image.Image
-	wrap  TextureWrap
+	image   image.Image
+	wrap    TextureWrap
+	onTexel TextureOnTexel
+	onApply TextureOnApply
 }
 
 func NewImageTexture() *ImageTexture {
@@ -84,12 +90,15 @@ func ImageColorToTuple(c color.Color) Tuple {
 
 	r, g, b, a := c.RGBA()
 
-	t := Tuple{float64(r)/Max, float64(g)/Max, float64(b)/Max, float64(a)/Max}
+	t := Tuple{float64(r) / Max, float64(g) / Max, float64(b) / Max, float64(a) / Max}
 
 	// TODO: need to consider actual color space
 	t.X = ErpGammaToLinear(t.X)
 	t.Y = ErpGammaToLinear(t.Y)
 	t.Z = ErpGammaToLinear(t.Z)
+	// t.X = ErpsRGBToLinear(t.X)
+	// t.Y = ErpsRGBToLinear(t.Y)
+	// t.Z = ErpsRGBToLinear(t.Z)
 
 	return t
 }
@@ -97,7 +106,13 @@ func ImageColorToTuple(c color.Color) Tuple {
 func (t *ImageTexture) TextureAt(x, y int) Tuple {
 	bounds := t.image.Bounds()
 
-	return ImageColorToTuple( t.image.At(bounds.Min.X+x, bounds.Min.Y+y) )
+	c := ImageColorToTuple(t.image.At(bounds.Min.X+x, bounds.Min.Y+y))
+
+	if t.onTexel != nil {
+		c = t.onTexel(c)
+	}
+
+	return c
 }
 
 func (t *ImageTexture) ApplyAtHit(ii *IntersectionInfo) {
@@ -141,6 +156,13 @@ func (t *ImageTexture) ApplyAtHit(ii *IntersectionInfo) {
 
 	ct := c00.Add(c01).Add(c10).Add(c11)
 
+	// Use a custom handler if defined
+	if t.onApply != nil {
+		if done := t.onApply(ct, ii); done {
+			return
+		}
+	}
+
 	// Image color is alpha pre-multiplied, so we only need to merge in the target color
-	ii.Mat.DiffuseColor = RGB(ct.X, ct.Y, ct.Z).Add(ii.Mat.DiffuseColor.Mul(1-ct.W))
+	ii.Mat.DiffuseColor = RGB(ct.X, ct.Y, ct.Z).Add(ii.Mat.DiffuseColor.Mul(1 - ct.W))
 }

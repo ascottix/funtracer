@@ -90,7 +90,7 @@ func LightenHit(lightv Tuple, lightIntensity Color, ii *IntersectionInfo) (resul
 
 		// The energy of the light hitting the surface depends on the cosine of the angle
 		// between the light direction and the surface normal (Lambert's cosine law) i.e. cosTheta
-		result = ii.Mat.DiffuseColor.Mul(material.Diffuse * cosTheta * OrenNayar(ii.Eyev, lightv, ii.Normalv, material.Roughness))
+		result = ii.Mat.DiffuseColor.Mul(ii.Mat.DiffuseLevel * cosTheta * OrenNayar(ii.Eyev, lightv, ii.Normalv, material.Roughness))
 
 		// The Blinn-Phong model accounts for light that may be reflected directly towards the eye,
 		// controlled by Specular (intensity of reflected light) and Shininess

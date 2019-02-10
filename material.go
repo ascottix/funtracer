@@ -5,14 +5,16 @@
 package main
 
 type MaterialParams struct {
-	DiffuseColor Color // Diffuse color
+	DiffuseColor Color   // Diffuse color
+	DiffuseLevel float64 // Kd
+	ReflectLevel float64
+	RefractLevel float64
 }
 
 type Material struct {
 	MaterialParams
 	Texture      Texture
 	Ambient      float64 // Ka
-	Diffuse      float64 // Kd
 	Roughness    float64 // Diffuse roughness (i.e. sigma in the Oren-Nayar model)
 	Specular     float64
 	Shininess    float64 // Ns, specular exponent
@@ -20,23 +22,19 @@ type Material struct {
 	Refract      Color
 	Ior          float64 // Ni, index of refraction
 	ReflectColor Color
-	ReflectLevel float64
 	RefractColor Color
-	RefractLevel float64
 }
 
 func NewMaterial() *Material {
 	m := Material{
 		MaterialParams: MaterialParams{
 			DiffuseColor: White,
+			DiffuseLevel: 0.9,
 		},
-		Ambient:      0.1,
-		Diffuse:      0.9,
-		Specular:     0.9,
-		Shininess:    200.0,
-		ReflectLevel: 0.0,
-		ReflectColor: White,
-		Ior:          1.0, // Index of refraction
+		Ambient:   0.1,
+		Specular:  0.9,
+		Shininess: 200.0,
+		Ior:       1.0, // Index of refraction
 	}
 
 	m.SetReflect(0, White)
@@ -67,7 +65,7 @@ func (m *Material) SetAmbient(v float64) *Material {
 func (m *Material) SetDiffuse(v float64) *Material {
 	// Diffuse represents how much light is scattered by the material,
 	// it is used to compute the diffuse surface color
-	m.Diffuse = v
+	m.DiffuseLevel = v
 	return m
 }
 

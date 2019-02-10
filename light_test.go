@@ -132,7 +132,7 @@ func TestDepthOfField(t *testing.T) {
 	world.RenderToPNG(camera, "test_depth_of_field.png")
 }
 
-func applyTexture(s *Shape, filename string) bool {
+func applyTexture(s *Shape, filename string) *ImageTexture {
 	txt := NewImageTexture()
 	err := txt.LoadFromFile(filename)
 	if err == nil {
@@ -141,22 +141,51 @@ func applyTexture(s *Shape, filename string) bool {
 		Debugln("Cannot load texture: ", filename)
 	}
 
-	return err == nil
+	return txt
 }
 
 func TestTextures(t *testing.T) {
 	t.SkipNow() // Test works but needs the texture files
 
-	s1 := NewSphere()
-	s1.SetTransform(Scaling(1.2), RotationX(Pi/2))
-	applyTexture(s1, "../textures/ash_uvgrid01.jpg")
+	s0 := NewSphere()
+	s0.SetTransform(Scaling(4.4), RotationY(-1.1), RotationZ(0.2), RotationX(0.4))
+	s0.Material().SetAmbient(100).SetDiffuse(0)
+	s0.SetShadow(false)
+	applyTexture(s0, "../textures/2k_stars_milky_way.jpg")
 
-	light := NewPointLight(Point(0, 4, -4), RGB(1, 1, 1).Mul(0.9))
+	s1 := NewSphere()
+	s1.SetTransform(Scaling(1.20), RotationY(-Pi/8))
+	s1.Material().SetSpecular(0).SetDiffuse(1).SetDiffuseColor(CSS("dodgerblue"))
+	applyTexture(s1, "../textures/2k_earth_daymap.jpg")
+
+	s2 := NewSphere()
+	s2.SetTransform(Scaling(1.22), RotationY(-Pi/8))
+	s2.Material().SetDiffuse(0).SetReflect(0, White).SetRefract(1, White).SetIor(1)
+	s2.SetShadow(false)
+	txt := applyTexture(s2, "../textures/2k_earth_clouds.jpg")
+
+	// Add transparency to the texture, based on how bright it is
+	txt.onTexel = func(c Tuple) Tuple {
+		alpha := c.X*0.30 + c.Y*0.59 + c.Z*0.11
+
+		return c.Mul(alpha)
+	}
+
+	// Change the transparency of the sphere to match the texture at the hit
+	txt.onApply = func(c Tuple, ii *IntersectionInfo) bool {
+		ii.Mat.DiffuseColor = RGB(c.X, c.Y, c.Z)
+		ii.Mat.DiffuseLevel = 1.8 // Boost white a little
+		ii.Mat.RefractLevel = 1 - c.W
+
+		return true // Prevent default processing
+	}
+
+	light := NewDirectionalLight(Vector(1, -1, 0.3), RGB(1, 1, 1).Mul(1))
 
 	world := NewWorld()
-	world.SetAmbient(Gray(0.1))
+	world.SetAmbient(Gray(0.01))
 
-	world.AddObjects(s1)
+	world.AddObjects(s0, s1, s2)
 
 	world.AddLights(light)
 
@@ -169,48 +198,41 @@ func TestTextures(t *testing.T) {
 func TestPlanets(t *testing.T) {
 	t.SkipNow() // Test works but needs the texture files
 
-	ok := true
-
 	// These wonderful textures come from https://www.solarsystemscope.com/textures/
 
 	// Universe
 	s0 := NewSphere()
 	s0.SetTransform(Scaling(6), RotationZ(Pi/3))
 
-	ok = ok && applyTexture(s0, "../textures/2k_stars.jpg")
+	applyTexture(s0, "../textures/2k_stars.jpg")
 
 	// Mars
 	s1 := NewSphere()
 	s1.SetTransform(Translation(-1, -0.5, 0))
 	s1.SetShadow(false)
 
-	ok = ok && applyTexture(s1, "../textures/2k_mars.jpg")
+	applyTexture(s1, "../textures/2k_mars.jpg")
 
 	// Earth
 	s2 := NewSphere()
 	s2.SetTransform(Translation(0.2, -0.3, 1.5), RotationY(Pi/1.5))
 	s2.SetShadow(false)
 
-	ok = ok && applyTexture(s2, "../textures/2k_earth_daymap.jpg")
+	applyTexture(s2, "../textures/2k_earth_daymap.jpg")
 
 	// Jupiter
 	s3 := NewSphere()
 	s3.SetTransform(Translation(1.7, 0, 3), RotationY(Pi/6))
 	s3.SetShadow(false)
 
-	ok = ok && applyTexture(s3, "../textures/2k_jupiter.jpg")
+	applyTexture(s3, "../textures/2k_jupiter.jpg")
 
 	// Moon
 	s4 := NewSphere()
 	s4.SetTransform(Scaling(0.25), Translation(-5, 1.5, 12.5), RotationY(Pi-Pi/1.5), RotationX(-Pi/8))
 	s4.SetShadow(false)
 
-	ok = ok && applyTexture(s4, "../textures/2k_moon.jpg")
-
-	if !ok {
-		Debugln("Skipping test because of missing textures")
-		return
-	}
+	applyTexture(s4, "../textures/2k_moon.jpg")
 
 	light := NewPointLight(Point(0, 4, -4), RGB(1, 1, 1).Mul(0.9))
 
