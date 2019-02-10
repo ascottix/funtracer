@@ -299,9 +299,9 @@ func (light *RectLight) LightenHitWithAdaptiveSampling(ii *IntersectionInfo, rt 
 
 func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result Color) {
 	if false {
-		return light.LightenHitWithJitteredStratified(ii, rt, 16+0*float64(rt.world.Options.AreaLightSamples))
+		return light.LightenHitWithJitteredStratified(ii, rt, float64(rt.world.Options.AreaLightSamples))
 	} else {
-		return light.LightenHitWithAdaptiveSampling(ii, rt, 5, 9)
+		return light.LightenHitWithAdaptiveSampling(ii, rt, rt.world.Options.AreaLightAdaptiveMinDepth, rt.world.Options.AreaLightAdaptiveMaxDepth)
 	}
 }
 

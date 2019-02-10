@@ -95,7 +95,7 @@ func TestRectLight(t *testing.T) {
 
 	world.AddLights(light)
 
-	camera := NewCamera(640, 320, Pi/3)
+	camera := NewCamera(800, 400, Pi/3)
 	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -5), Point(0, 1, 0), Vector(0, 1, 0)))
 	// Good parameters for blur: LensRadius=0.2, FocalDistance=7, Supersampling=4
 

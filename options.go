@@ -17,29 +17,35 @@ const (
 )
 
 type Options struct {
-	OutFilename      string `json:"o"`
-	OutWidth         int    `json:"ow"`
-	OutHeight        int    `json:"oh"`
-	NumThreads       int    `json:"nt"`
-	Supersampling    int    `json:"ss"`
-	ReflectionDepth  int    `json:"rd"`
-	AreaLightSamples int    `json:"as"`
-	LensRadius       float64
-	FocalDistance    float64
+	OutFilename               string `json:"o"`
+	OutWidth                  int    `json:"ow"`
+	OutHeight                 int    `json:"oh"`
+	NumThreads                int    `json:"nt"`
+	Supersampling             int    `json:"ss"`
+	ReflectionDepth           int    `json:"rd"`
+	LensRadius                float64
+	FocalDistance             float64
+	AreaLightSamples          int `json:"aljs"`
+	AreaLightAdaptiveMinDepth int `json:"almind"`
+	AreaLightAdaptiveMaxDepth int `json:"almaxd"`
 }
 
 func NewOptions() *Options {
 	// Assign a default value to all options
 	options := Options{
-		OutFilename:      "fun.png",
-		OutWidth:         0,
-		OutHeight:        0,
-		NumThreads:       runtime.GOMAXPROCS(0),
-		Supersampling:    1,
-		ReflectionDepth:  4,
-		AreaLightSamples: 16, // Samples per axis
-		LensRadius:       0,
-		FocalDistance:    0,
+		OutFilename:     "fun.png",
+		OutWidth:        0,
+		OutHeight:       0,
+		NumThreads:      runtime.GOMAXPROCS(0),
+		Supersampling:   1,
+		ReflectionDepth: 4,
+		// Camera parameters
+		LensRadius:    0,
+		FocalDistance: 0,
+		// Area light global parameters
+		AreaLightSamples:          0, // Samples per axis, 0 switches to the adaptive sampler
+		AreaLightAdaptiveMinDepth: 5, // Bump if hard shadows or incorrect specular
+		AreaLightAdaptiveMaxDepth: 9, // Bump if banding shows up in shadows
 	}
 
 	return &options
