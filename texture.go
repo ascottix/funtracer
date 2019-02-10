@@ -6,6 +6,7 @@ package main
 
 import (
 	"image"
+	"image/color"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
@@ -77,22 +78,26 @@ func textureToImage(u float64, imgSize int) (i, j int, t float64) {
 	return
 }
 
-func Rgb65535(r, g, b uint32) Color {
+// ImageColorToTuple encodes an image color into a Tuple, using W to store alpha and X, Y, Z for R, G, B
+func ImageColorToTuple(c color.Color) Tuple {
 	const Max = 65535
-	return RGB(float64(r)/Max, float64(g)/Max, float64(b)/Max)
+
+	r, g, b, a := c.RGBA()
+
+	t := Tuple{float64(r)/Max, float64(g)/Max, float64(b)/Max, float64(a)/Max}
+
+	// TODO: need to consider actual color space
+	t.X = ErpGammaToLinear(t.X)
+	t.Y = ErpGammaToLinear(t.Y)
+	t.Z = ErpGammaToLinear(t.Z)
+
+	return t
 }
 
-func (t *ImageTexture) TextureAt(x, y int) Color {
+func (t *ImageTexture) TextureAt(x, y int) Tuple {
 	bounds := t.image.Bounds()
 
-	r, g, b, _ := t.image.At(bounds.Min.X+x, bounds.Min.Y+y).RGBA()
-
-	c := Rgb65535(r, g, b)
-
-	// TODO: need to figure out a way to get color space information
-	c = c.Erp(ErpGammaToLinear)
-
-	return c
+	return ImageColorToTuple( t.image.At(bounds.Min.X+x, bounds.Min.Y+y) )
 }
 
 func (t *ImageTexture) ApplyAtHit(ii *IntersectionInfo) {
@@ -134,5 +139,8 @@ func (t *ImageTexture) ApplyAtHit(ii *IntersectionInfo) {
 	c10 := t.TextureAt(x1, y0).Mul(tu * (1 - tv))
 	c11 := t.TextureAt(x1, y1).Mul(tu * tv)
 
-	ii.Mat.DiffuseColor = c00.Add(c01).Add(c10).Add(c11)
+	ct := c00.Add(c01).Add(c10).Add(c11)
+
+	// Image color is alpha pre-multiplied, so we only need to merge in the target color
+	ii.Mat.DiffuseColor = RGB(ct.X, ct.Y, ct.Z).Add(ii.Mat.DiffuseColor.Mul(1-ct.W))
 }
