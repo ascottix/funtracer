@@ -48,7 +48,7 @@ func ErpClip(t float64) float64 {
 	return t
 }
 
-// Gamma applies gamma correction to a linear value, using gamma=2.2
+// Gamma correction uses a more or less standard value of 2.2
 const Gamma = 2.2
 
 func ErpLinearToGamma(t float64) float64 {
@@ -60,10 +60,18 @@ func ErpGammaToLinear(t float64) float64 {
 }
 
 // sRGB convers a value from linear to sRGB
-func ErpsRGB(t float64) float64 {
+func ErpLinearTosRGB(t float64) float64 {
 	if t <= 0.00313066844250063 {
 		return t * 12.92
 	} else {
 		return 1.055*math.Pow(t, 1/2.4) - 0.055
+	}
+}
+
+func ErpsRGBToLinear(t float64) float64 {
+	if t <= 0.0404482362771082 {
+		return t / 12.92
+	} else {
+		return math.Pow(((t + 0.055) / 1.055), 2.4)
 	}
 }
