@@ -96,5 +96,7 @@ func (p *Cylinder) LocalNormalAt(point Tuple) Tuple {
 }
 
 func (p *Cylinder) NormalAtHit(point Tuple, ii *IntersectionInfo) Tuple {
+	// See http://cse.csusb.edu/tongyu/courses/cs520/notes/texture.php for (u,v)
+
 	return p.LocalNormalAt(point)
 }

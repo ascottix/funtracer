@@ -95,6 +95,8 @@ func TestRectLight(t *testing.T) {
 
 	world.AddLights(light)
 
+	world.Options.AreaLightAdaptiveMinDepth = 6 // 5 is not enough to resolve the specular highlight on the green ball
+
 	camera := NewCamera(800, 400, Pi/3)
 	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -5), Point(0, 1, 0), Vector(0, 1, 0)))
 	// Good parameters for blur: LensRadius=0.2, FocalDistance=7, Supersampling=4
@@ -144,7 +146,7 @@ func applyTexture(s *Shape, filename string) *ImageTexture {
 	return txt
 }
 
-func TestTextures(t *testing.T) {
+func TestEarthFromSpace(t *testing.T) {
 	t.SkipNow() // Test works but needs the texture files
 
 	s0 := NewSphere()
@@ -153,31 +155,29 @@ func TestTextures(t *testing.T) {
 	s0.SetShadow(false)
 	applyTexture(s0, "../textures/2k_stars_milky_way.jpg")
 
+	rot := Pi / 2.5
+
 	s1 := NewSphere()
-	s1.SetTransform(Scaling(1.20), RotationY(-Pi/8))
+	s1.SetTransform(Scaling(1.20), RotationY(rot))
 	s1.Material().SetSpecular(0).SetDiffuse(1).SetDiffuseColor(CSS("dodgerblue"))
 	applyTexture(s1, "../textures/2k_earth_daymap.jpg")
 
 	s2 := NewSphere()
-	s2.SetTransform(Scaling(1.22), RotationY(-Pi/8))
+	s2.SetTransform(Scaling(1.22), RotationY(rot))
 	s2.Material().SetDiffuse(0).SetReflect(0, White).SetRefract(1, White).SetIor(1)
 	s2.SetShadow(false)
 	txt := applyTexture(s2, "../textures/2k_earth_clouds.jpg")
 
 	// Add transparency to the texture, based on how bright it is
-	txt.onTexel = func(c Tuple) Tuple {
-		alpha := c.X*0.30 + c.Y*0.59 + c.Z*0.11
-
-		return c.Mul(alpha)
+	for i := range txt.data {
+		txt.data[i].a = txt.data[i].r*0.299 + txt.data[i].g*0.587 + txt.data[i].b*0.114
 	}
 
 	// Change the transparency of the sphere to match the texture at the hit
-	txt.onApply = func(c Tuple, ii *IntersectionInfo) bool {
-		ii.Mat.DiffuseColor = RGB(c.X, c.Y, c.Z)
-		ii.Mat.DiffuseLevel = 1.8 // Boost white a little
-		ii.Mat.RefractLevel = 1 - c.W
-
-		return true // Prevent default processing
+	txt.onApply = func(c ColorRGBA, ii *IntersectionInfo) {
+		ii.Mat.DiffuseColor = c.RGB()
+		ii.Mat.DiffuseLevel = 1.5 // Boost white a little
+		ii.Mat.RefractLevel = float64(1 - c.a)
 	}
 
 	light := NewDirectionalLight(Vector(1, -1, 0.3), RGB(1, 1, 1).Mul(1))
@@ -188,11 +188,12 @@ func TestTextures(t *testing.T) {
 	world.AddObjects(s0, s1, s2)
 
 	world.AddLights(light)
+	world.Options.Supersampling = 4
 
-	camera := NewCamera(300*4, 300*4, Pi/4)
+	camera := NewCamera(800, 800, Pi/4)
 	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -4), Point(0, 0, 0), Vector(0, 1, 0)))
 
-	world.RenderToPNG(camera, "test_textures.png")
+	world.RenderToPNG(camera, "test_earth_from_space.png")
 }
 
 func TestPlanets(t *testing.T) {
@@ -247,4 +248,84 @@ func TestPlanets(t *testing.T) {
 	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -4), Point(-0.15, 0, 0), Vector(0, 1, 0)))
 
 	world.RenderToPNG(camera, "test_planets.png")
+}
+
+func TestNormalMaps(t *testing.T) {
+	t.SkipNow()
+
+	floor := NewPlane()
+	floor.SetTransform(Scaling(4, -4, 4), RotationX(-Pi/2), Translation(0, -4, 0))
+
+	txt := NewImageTexture()
+	txt.linear = true
+	// txt.LoadFromFile("head.jpg")
+	// txt.LoadFromFile("wall.png")
+	// txt.LoadFromFile("Well Preserved Chesterfield - (Normal Map_2).png")
+	txt.LoadFromFile("Wall_Stone_003_NRM.jpg")
+	txt.wrap = TwPeriodic
+
+	txt.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+		return u / 3, v / 3
+	}
+
+	txt3 := NewImageTexture()
+	// txt.LoadFromFile("head.jpg")
+	// txt.LoadFromFile("wall.png")
+	// txt.LoadFromFile("Well Preserved Chesterfield - (Normal Map_2).png")
+	txt3.LoadFromFile("Wall_Stone_003_COLOR.jpg")
+	txt3.wrap = TwPeriodic
+
+	txt3.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+		return u / 3, v / 3
+	}
+
+	floor.Material().NormalMap = txt
+	floor.Material().SetPattern(txt3)
+
+	s1 := NewSphere()
+	s1.SetTransform(Translation(0, 1, 0))
+	s1.SetMaterial(NewMaterial().SetDiffuseColor(CSS("orange")).SetDiffuse(1))
+
+	// txt2 := NewImageTexture()
+	// txt2.linear = true
+	// // txt2.LoadFromFile("NormalMap.jpg")
+	// txt2.LoadFromFile("Well Preserved Chesterfield - (Normal Map_2).png")
+
+	// txt2.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+	// 	return u * 3, v * 3
+	// }
+
+	txt2 := NewImageTexture()
+	txt2.linear = true
+	// txt2.LoadFromFile("NormalMap.jpg")
+	txt2.LoadFromFile("marble_coloured_001_NRM.png")
+
+	txt4 := NewImageTexture()
+	txt4.LoadFromFile("marble_coloured_001_COLOR.png")
+
+	txt2.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+		return u * 2, v * 2
+	}
+	txt4.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+		return u * 2, v * 2
+	}
+
+	s1.Material().NormalMap = txt2
+	s1.Material().SetPattern(txt2)
+
+	// light := NewPointLight(Point(0,5,-5), RGB(1, 1, 1).Mul(0.9))
+	// light := NewPointLight(Point(-5,5,-5), RGB(1, 1, 1).Mul(0.9))
+	light := NewDirectionalLight(Vector(0, -2, 2), RGB(1, 1, 1).Mul(0.9))
+
+	world := NewWorld()
+	world.SetAmbient(Gray(0.1))
+
+	world.AddObjects(floor, s1)
+
+	world.AddLights(light)
+
+	camera := NewCamera(800, 800, Pi/4)
+	camera.SetTransform(EyeViewpoint(Point(0, 1, -5), Point(0, 1, 0), Vector(0, 1, 0)))
+
+	world.RenderToPNG(camera, "test_normal_maps.png")
 }

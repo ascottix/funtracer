@@ -14,6 +14,7 @@ type MaterialParams struct {
 type Material struct {
 	MaterialParams
 	Texture      Texture
+	NormalMap    *ImageTexture
 	Ambient      float64 // Ka
 	Roughness    float64 // Diffuse roughness (i.e. sigma in the Oren-Nayar model)
 	Specular     float64

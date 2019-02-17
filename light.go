@@ -84,7 +84,9 @@ func OrenNayar(eyev, lightv, normalv Tuple, sigma float64) float64 {
 // It uses the Oren-Nayar model for diffuse and the Blinn-Phong model for specular
 // (ambient contribution is computed elsewhere).
 func LightenHit(lightv Tuple, lightIntensity Color, ii *IntersectionInfo) (result Color) {
-	if cosTheta := lightv.DotProduct(ii.Normalv); cosTheta >= 0 { // Cosine of angle between light vector and surface normal
+	n := ii.SurfNormalv
+
+	if cosTheta := lightv.DotProduct(n); cosTheta >= 0 { // Cosine of angle between light vector and surface normal
 		// Light is on the same side of the surface, need to compute both diffuse and specular
 		material := ii.O.Material()
 
@@ -97,7 +99,7 @@ func LightenHit(lightv Tuple, lightIntensity Color, ii *IntersectionInfo) (resul
 		// (size of reflecting area, higher values yield a smaller area with harder reflection)
 		halfv := lightv.Add(ii.Eyev).Normalize() // Half-vector, this would be reflectv := lightv.Neg().Reflect(ii.Normalv) in the standard Phong model
 
-		if nDotH := ii.Normalv.DotProduct(halfv); nDotH > Epsilon { // Would be reflectv.DotProduct(ii.Eyev) in the standard Phong model
+		if nDotH := n.DotProduct(halfv); nDotH > Epsilon { // Would be reflectv.DotProduct(ii.Eyev) in the standard Phong model
 			f := math.Pow(nDotH, 4*material.Shininess) // Multiply shininess by 4 to keep "compatibility" with values tuned for the standard Phong model
 
 			result = result.Add(material.ReflectColor.Mul(material.Specular * f)) // Add specular component
@@ -127,7 +129,7 @@ func Lighten(light *PointLight, object Hittable, point, eyev, normalv Tuple, sha
 		return Black, Black
 	}
 
-	ii := IntersectionInfo{Intersection: Intersection{O: object}, Point: point, Eyev: eyev, Normalv: normalv}
+	ii := IntersectionInfo{Intersection: Intersection{O: object}, Point: point, Eyev: eyev, Normalv: normalv, SurfNormalv: normalv}
 	object.Material().GetParamsAt(&ii)
 
 	lightv := light.Pos.Sub(ii.Point).Normalize() // Direction to the light source
@@ -292,9 +294,36 @@ func (light *RectLight) LightenHitWithAdaptiveSampling(ii *IntersectionInfo, rt 
 		maxDepth /= 2
 	}
 
+	// Spot
+	intensity := 1.0
+
+	// TODO!
+	// AngleMin := 0.1
+	// AngleMax := 0.2
+
+	// pos := light.Pos.Add(light.Uv.Mul(0.5)).Add(light.Vv.Mul(0.5))
+	// lightv := pos.Sub(ii.Point).Normalize() // Direction to the light source
+
+	// dir := light.Vv.CrossProduct(light.Uv).Normalize()
+	// cosSpotAngle := lightv.Neg().DotProduct(dir)
+	// spotAngle := math.Acos(cosSpotAngle)
+
+	// a := math.Abs(spotAngle)
+
+	// if a >= AngleMax {
+	// 	return Black
+	// }
+
+	// if a > AngleMin {
+	// 	// Modulate light so that it fades off gently
+	// 	t := (AngleMax - a) / (AngleMax - AngleMin)
+	// 	sqt := t * t
+	// 	intensity = sqt / (2*(sqt-t) + 1)
+	// }
+
 	result = estimateArea(0, 0, 1, 1, sample(0, 0), sample(0, 1), sample(1, 0), sample(1, 1), 0, true)
 
-	return result
+	return result.Mul(intensity)
 }
 
 func (light *RectLight) LightenHit(ii *IntersectionInfo, rt *Raytracer) (result Color) {

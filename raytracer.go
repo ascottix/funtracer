@@ -39,13 +39,9 @@ func (rt *Raytracer) HitForShadow(ray Ray) Intersection {
 }
 
 func (rt *Raytracer) ShadeHit(ii *IntersectionInfo, depth int) (c Color) {
-	material := ii.O.Material()
-
-	material.GetParamsAt(ii)
-
 	m := ii.Mat
 
-	c = m.DiffuseColor.Blend(rt.world.Ambient.Mul(material.Ambient))
+	c = m.DiffuseColor.Blend(rt.world.Ambient.Mul(ii.O.Material().Ambient))
 
 	for _, light := range rt.world.Lights {
 		c = c.Add(light.LightenHit(ii, rt))

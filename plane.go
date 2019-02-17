@@ -35,5 +35,15 @@ func (p *Plane) LocalNormalAt(point Tuple) Tuple {
 }
 
 func (p *Plane) NormalAtHit(point Tuple, ii *IntersectionInfo) Tuple {
+	ii.U = point.X
+	ii.V = point.Z
+
+	if nmap := ii.GetNormalMap(); nmap != nil {
+		n := nmap.NormalAtHit(ii)
+
+		ii.HasSurfNormalv = true
+		ii.SurfNormalv = Vector(n.X, n.Z, n.Y).Normalize()
+	}
+
 	return p.LocalNormalAt(point)
 }

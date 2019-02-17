@@ -45,12 +45,28 @@ func (s *Sphere) LocalNormalAt(point Tuple) Tuple {
 }
 
 func (s *Sphere) NormalAtHit(point Tuple, ii *IntersectionInfo) Tuple {
-	// Compute (u,v) coordinates of point
-	theta := math.Atan2(point.Z, point.X) + Pi
-	phi := math.Acos(point.Y)
+	// Compute (u,v) coordinates of point, starting from the consideration that a point (x, y, z)
+	// on the unit sphere can be expressed as (sin θ cos φ, cos θ, sin θ sin φ)
+	phi := math.Atan2(point.Z, point.X) + Pi
+	theta := math.Acos(point.Y)
 
-	ii.U = theta / (2 * Pi)
-	ii.V = phi / Pi
+	ii.U = phi / (2 * Pi)
+	ii.V = theta / Pi
 
-	return s.LocalNormalAt(point)
+	normal := s.LocalNormalAt(point)
+
+	if nmap := ii.GetNormalMap(); nmap != nil {
+		n := nmap.NormalAtHit(ii)
+
+		A := Vector(0, 1, 0)
+		T := normal.CrossProduct(A).Normalize() // Tangent vector
+		B := T.CrossProduct(normal)             // Bitangent vector
+
+		// TODO: we're multiplying by -n.Y here but it may be texture-dependent!
+		// Yes... it was texture dependent... we need to find a way to handle that
+		ii.SurfNormalv = (T.Mul(n.X).Add(B.Mul(n.Y)).Add(normal.Mul(n.Z))).Normalize()
+		ii.HasSurfNormalv = true
+	}
+
+	return normal
 }

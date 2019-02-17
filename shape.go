@@ -107,6 +107,10 @@ func (s *Shape) NormalAtHit(ii *IntersectionInfo, xs *Intersections) Tuple {
 	// Get the normal in object space, may fill other info as well
 	normal := s.shapable.NormalAtHit(point, ii)
 
+	if ii.HasSurfNormalv {
+		ii.SurfNormalv = s.NormalToWorld(ii.SurfNormalv)
+	}
+
 	// Return the normal in world space
 	return s.NormalToWorld(normal)
 }

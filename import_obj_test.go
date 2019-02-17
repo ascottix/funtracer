@@ -245,7 +245,7 @@ func TestObjTeapot(t *testing.T) {
 
 	world.AddObjects(floor, wall)
 
-	camera := NewCamera(400*2, 200*2, 1)
+	camera := NewCamera(800, 400, 1)
 	camera.SetTransform(EyeViewpoint(Point(0, 2, -9), Point(0, 0.5, 0), Vector(0, 1, 0)))
 
 	// Zoom on shadow (for testing the adaptive area light heuristics)
