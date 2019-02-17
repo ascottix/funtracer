@@ -21,9 +21,11 @@ type MeshTriangle struct {
 	mesh *Trimesh
 	V    [3]int // Vertex indices
 	VN   [3]int // Vertex normals
+	VT   [2]int // Texture vertices
 	E1   Tuple  // Edges
 	E2   Tuple
 	N    Tuple // Normal
+	Mat  *Material
 }
 
 func NewTrimesh(info *ObjInfo, group int) *Trimesh {
@@ -54,6 +56,8 @@ func NewTrimesh(info *ObjInfo, group int) *Trimesh {
 			mt.E1 = p[1].Sub(p[0])
 			mt.E2 = p[2].Sub(p[0])
 			mt.N = mt.E2.CrossProduct(mt.E1).Normalize()
+
+			mt.Mat = f.M
 
 			mesh.T = append(mesh.T, mt)
 		}
@@ -106,12 +110,15 @@ func (t *MeshTriangle) Bounds() Box {
 }
 
 func (t *MeshTriangle) Material() *Material {
+	if t.Mat != nil {
+		return t.Mat
+	}
+
 	return t.mesh.Material()
 }
 
-// SetMaterial should never be called on a single mesh triangle
 func (t *MeshTriangle) SetMaterial(m *Material) {
-	t.mesh.SetMaterial(m)
+	t.Mat = m
 }
 
 func (t *MeshTriangle) Name() string {

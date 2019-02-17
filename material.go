@@ -45,7 +45,7 @@ func NewMaterial() *Material {
 }
 
 func (m *Material) GetParamsAt(ii *IntersectionInfo) {
-	ii.Mat = m.MaterialParams
+	ii.Mat = m.MaterialParams // Copy parameters that can be modified by later processing (e.g. textures)
 
 	if m.Texture != nil {
 		m.Texture.ApplyAtHit(ii)

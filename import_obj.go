@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"io"
 	"os"
-	"regexp"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -16,22 +16,13 @@ import (
 // See:
 // https://en.wikipedia.org/wiki/Wavefront_.obj_file
 // https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/27982/versions/5/previews/help%20file%20format/MTL_format.html
-type ObjMaterial struct {
-	Name string
-	Ka   Color   // Ambient
-	Kd   Color   // Diffuse
-	Ke   Color   // Emissive
-	Ks   Color   // Specular
-	Ns   float64 // Specular exponent (typically from 0 to 1000)
-	Tf   Color   // Transmission filter
-	Tr   float64 // Transparency (can be also specified with 'd' i.e. "dissolve", then Tr=1-d)
-	Ni   float64 // Index of refraction
-}
 
 type ObjInfoFace struct {
 	V  [3]int // Indices in vertex array
 	VN [3]int // Indices in vertex normals array
+	VT [3]int // Indices in texture vertex array
 	G  int    // Group
+	M  *Material
 }
 
 type ObjInfoGroup struct {
@@ -39,10 +30,12 @@ type ObjInfoGroup struct {
 }
 
 type ObjInfo struct {
-	V      []Tuple
-	VN     []Tuple
-	F      []ObjInfoFace
-	Groups []ObjInfoGroup
+	V         []Tuple
+	VN        []Tuple
+	VT        []Tuple
+	F         []ObjInfoFace
+	Groups    []ObjInfoGroup
+	Materials map[string]*Material
 }
 
 func (o *ObjInfo) Bounds() Box {
@@ -134,15 +127,62 @@ func (o *ObjInfo) Dump() {
 	Debugf("v=%d, vn=%d, f=%d\n", len(o.V), len(o.VN), len(o.F))
 }
 
-var (
-	ReBlank = regexp.MustCompile(`\s+`)
-)
+func ParseWavefrontMtllib(rd io.Reader, info *ObjInfo) {
+	reader := bufio.NewReader(rd)
 
-func ParseWavefrontObj(rd io.Reader) *ObjInfo {
-	var info ObjInfo
+	mat := NewMaterial()
+
+	s2f := func(fields []string, idx int) float64 {
+		f, err := strconv.ParseFloat(strings.TrimSpace(fields[idx]), 64)
+
+		if err != nil {
+			panic(err)
+		}
+
+		return f
+	}
+
+	for {
+		line, err := reader.ReadString('\n')
+
+		if err != nil {
+			break
+		}
+
+		if fields := strings.Fields(line); len(fields) > 0 {
+			switch fields[0] {
+			case "newmtl":
+				// Flush current material and prepare new one
+				name := strings.TrimSpace(line[len(fields[0])+1:]) // Name may contain spaces
+				mat = NewMaterial()
+				info.Materials[name] = mat
+				Debugln("Added new material", name)
+			case "Kd":
+				Kd := RGB(s2f(fields, 1), s2f(fields, 2), s2f(fields, 3))
+				Kd.R = ErpGammaToLinear(Kd.R)
+				Kd.G = ErpGammaToLinear(Kd.G)
+				Kd.B = ErpGammaToLinear(Kd.B)
+				mat.SetDiffuseColor(Kd)
+				mat.SetDiffuse(1)
+			case "map_Kd":
+				map_Kd := fields[1]
+				Debugln("*** TODO: load texture", map_Kd)
+			case "map_Ks":
+				Debugln("*** TODO: load specular texture")
+			case "map_Bump":
+				Debugln("*** TODO: load normal map")
+			}
+		}
+	}
+}
+
+func ParseWavefrontObj(rd io.Reader, dir string) *ObjInfo {
+	info := new(ObjInfo)
 
 	info.Groups = []ObjInfoGroup{ObjInfoGroup{Name: "default"}}
+	info.Materials = make(map[string]*Material)
 
+	// Support functions
 	s2f := func(s string) float64 {
 		f, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
 
@@ -181,7 +221,10 @@ func ParseWavefrontObj(rd io.Reader) *ObjInfo {
 		return
 	}
 
+	// Parse file
 	reader := bufio.NewReader(rd)
+
+	var mat *Material
 
 	for {
 		line, err := reader.ReadString('\n')
@@ -190,54 +233,74 @@ func ParseWavefrontObj(rd io.Reader) *ObjInfo {
 			break
 		}
 
-		var s []string
+		if s := strings.Fields(line); len(s) > 0 {
+			switch s[0] {
+			case "mtllib":
+				// Open material library
+				filename := strings.TrimSpace(line[7:])
+				f, err := os.Open(filename)
 
-		s = ReBlank.Split(strings.TrimSpace(line), -1)
-
-		switch line[0] {
-		case 'v':
-			// Vertex
-			if line[1] == 'n' {
-				// Vertex normal
-				info.VN = append(info.VN, Point(s2f(s[1]), s2f(s[2]), s2f(s[3])))
-			} else if line[1] == 't' {
-				// Texture
-			} else {
-				// Standard vertex
-				info.V = append(info.V, Point(s2f(s[1]), s2f(s[2]), s2f(s[3])))
-			}
-		case 'f':
-			// Polygon
-			i1, _, n1 := f2cs(s[1])
-			for i := 3; i < len(s); i++ {
-				i2, _, n2 := f2cs(s[i-1])
-				i3, _, n3 := f2cs(s[i-0])
-
-				f := ObjInfoFace{
-					[3]int{i1 - 1, i2 - 1, i3 - 1},
-					[3]int{n1 - 1, n2 - 1, n3 - 1},
-					len(info.Groups) - 1,
+				if err != nil { // Cannot open, try again in same directory as .obj file
+					filename = filepath.Join(dir, filename)
+					f, err = os.Open(filename)
 				}
 
-				info.F = append(info.F, f)
-			}
-		case 'g':
-			// Group
-			g := ObjInfoGroup{}
+				if err == nil {
+					ParseWavefrontMtllib(f, info)
+					f.Close()
+				} else {
+					Debugln("*** Warning: cannot open material library", filename)
+				}
+			case "usemtl":
+				// Use specified material for following faces
+				name := strings.TrimSpace(line[len(s[0])+1:])
+				mat = info.Materials[name]
+				Debugln("Using material", name)
+			case "f":
+				// Polygon
+				i1, t1, n1 := f2cs(s[1])
+				for i := 3; i < len(s); i++ {
+					i2, t2, n2 := f2cs(s[i-1])
+					i3, t3, n3 := f2cs(s[i-0])
 
-			if len(s) > 1 {
-				g.Name = s[1]
-			}
+					f := ObjInfoFace{
+						V:  [3]int{i1 - 1, i2 - 1, i3 - 1},
+						VN: [3]int{n1 - 1, n2 - 1, n3 - 1},
+						VT: [3]int{t1 - 1, t2 - 1, t3 - 1},
+						G:  len(info.Groups) - 1,
+						M:  mat,
+					}
 
-			info.Groups = append(info.Groups, g)
+					info.F = append(info.F, f)
+				}
+			case "g":
+				// Group
+				g := ObjInfoGroup{}
+
+				if len(s) > 1 {
+					g.Name = s[1]
+				}
+
+				info.Groups = append(info.Groups, g)
+			case "v":
+				// Vertex
+				info.V = append(info.V, Point(s2f(s[1]), s2f(s[2]), s2f(s[3])))
+			case "vn":
+				// Vertex normal
+				n := Vector(s2f(s[1]), s2f(s[2]), s2f(s[3]))
+				info.VN = append(info.VN, n.Normalize())
+			case "vt":
+				// Texture vertex
+				info.VT = append(info.VT, Point(s2f(s[1]), s2f(s[2]), 0))
+			}
 		}
 	}
 
-	return &info
+	return info
 }
 
 func ParseWavefrontObjFromString(src string) *ObjInfo {
-	return ParseWavefrontObj(strings.NewReader(src))
+	return ParseWavefrontObj(strings.NewReader(src), "")
 }
 
 func ParseWavefrontObjFromFile(filename string) *ObjInfo {
@@ -246,7 +309,7 @@ func ParseWavefrontObjFromFile(filename string) *ObjInfo {
 	if err == nil {
 		defer f.Close()
 
-		return ParseWavefrontObj(f)
+		return ParseWavefrontObj(f, filepath.Dir(filename))
 	}
 
 	panic(err)
