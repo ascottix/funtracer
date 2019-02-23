@@ -13,6 +13,7 @@ type Trimesh struct {
 	Grouper
 	V        []Tuple // Vertices
 	VN       []Tuple // Vertex normals
+	VT       []Tuple
 	T        []MeshTriangle
 	material *Material // TODO! Handling of material needs to be refactored
 }
@@ -21,7 +22,7 @@ type MeshTriangle struct {
 	mesh *Trimesh
 	V    [3]int // Vertex indices
 	VN   [3]int // Vertex normals
-	VT   [2]int // Texture vertices
+	VT   [3]int // Texture vertices
 	E1   Tuple  // Edges
 	E2   Tuple
 	N    Tuple // Normal
@@ -38,6 +39,7 @@ func NewTrimesh(info *ObjInfo, group int) *Trimesh {
 
 	mesh.V = info.V
 	mesh.VN = info.VN
+	mesh.VT = info.VT
 
 	for _, f := range info.F {
 		if group == -1 || f.G == group {
@@ -48,6 +50,7 @@ func NewTrimesh(info *ObjInfo, group int) *Trimesh {
 
 			mt.V = f.V
 			mt.VN = f.VN
+			mt.VT = f.VT
 
 			for i := 0; i < 3; i++ {
 				p[i] = mesh.V[mt.V[i]] // Vertex
@@ -72,6 +75,10 @@ func (s *Trimesh) Material() *Material {
 
 func (s *Trimesh) SetMaterial(m *Material) {
 	s.material = m
+
+	for i := range s.T {
+		s.T[i].SetMaterial(nil)
+	}
 }
 
 func (s *Trimesh) AddToGroup(group *Group) {
@@ -184,13 +191,23 @@ func (t *MeshTriangle) NormalAtHit(ii *IntersectionInfo, xs *Intersections) Tupl
 
 	id := xs.Data(&ii.Intersection)
 
+	// Texture
+	VT1 := t.mesh.VT[t.VT[0]]
+	VT2 := t.mesh.VT[t.VT[1]]
+	VT3 := t.mesh.VT[t.VT[2]]
+
+	vt := VT2.Mul(id.tU).Add(VT3.Mul(id.tV)).Add(VT1.Mul(1 - id.tU - id.tV))
+	ii.U = vt.X
+	ii.V = 1 - vt.Y // TODO!!!
+
+	// Normal
 	N1 := t.mesh.VN[t.VN[0]]
 	N2 := t.mesh.VN[t.VN[1]]
 	N3 := t.mesh.VN[t.VN[2]]
 
-	n := N2.Mul(id.tU).Add(N3.Mul(id.tV)).Add(N1.Mul(1 - id.tU - id.tV))
+	normal := N2.Mul(id.tU).Add(N3.Mul(id.tV)).Add(N1.Mul(1 - id.tU - id.tV))
 
-	return t.mesh.NormalToWorld(n)
+	return t.mesh.NormalToWorld(normal)
 }
 
 func (t *MeshTriangle) WorldToObject(point Tuple) Tuple {

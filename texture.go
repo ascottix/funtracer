@@ -66,8 +66,10 @@ func (t *ImageTexture) Load(r io.Reader) error {
 
 	if err == nil {
 		bounds := image.Bounds()
+		
 		w := bounds.Max.X - bounds.Min.X
 		h := bounds.Max.Y - bounds.Min.Y
+
 		t.data = make([]ColorRGBA, w*h)
 		t.w = w
 		t.h = h

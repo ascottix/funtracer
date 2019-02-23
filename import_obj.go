@@ -127,7 +127,23 @@ func (o *ObjInfo) Dump() {
 	Debugf("v=%d, vn=%d, f=%d\n", len(o.V), len(o.VN), len(o.F))
 }
 
-func ParseWavefrontMtllib(rd io.Reader, info *ObjInfo) {
+func openObjDependency(filename, dir string) *os.File {
+	f, err := os.Open(filename)
+
+	if err != nil { // Cannot open, try again in the specified directory
+		filename = filepath.Join(dir, filename)
+		f, err = os.Open(filename)
+	}
+
+	if err != nil {
+		Debugln("*** Warning: cannot open .obj dependency ", filename)
+		f = nil
+	}
+
+	return f
+}
+
+func ParseWavefrontMtllib(rd io.Reader, info *ObjInfo, dir string) {
 	reader := bufio.NewReader(rd)
 
 	mat := NewMaterial()
@@ -150,10 +166,12 @@ func ParseWavefrontMtllib(rd io.Reader, info *ObjInfo) {
 		}
 
 		if fields := strings.Fields(line); len(fields) > 0 {
+			args := strings.TrimSpace(line[len(fields[0])+1:])
+
 			switch fields[0] {
 			case "newmtl":
 				// Flush current material and prepare new one
-				name := strings.TrimSpace(line[len(fields[0])+1:]) // Name may contain spaces
+				name := args
 				mat = NewMaterial()
 				info.Materials[name] = mat
 				Debugln("Added new material", name)
@@ -165,8 +183,14 @@ func ParseWavefrontMtllib(rd io.Reader, info *ObjInfo) {
 				mat.SetDiffuseColor(Kd)
 				mat.SetDiffuse(1)
 			case "map_Kd":
-				map_Kd := fields[1]
-				Debugln("*** TODO: load texture", map_Kd)
+				if f := openObjDependency(args, dir); f != nil {
+					t := NewImageTexture()
+					err := t.Load(f)
+					f.Close()
+					if err == nil {
+						mat.SetPattern(t)
+					}
+				}
 			case "map_Ks":
 				Debugln("*** TODO: load specular texture")
 			case "map_Bump":
@@ -238,18 +262,9 @@ func ParseWavefrontObj(rd io.Reader, dir string) *ObjInfo {
 			case "mtllib":
 				// Open material library
 				filename := strings.TrimSpace(line[7:])
-				f, err := os.Open(filename)
-
-				if err != nil { // Cannot open, try again in same directory as .obj file
-					filename = filepath.Join(dir, filename)
-					f, err = os.Open(filename)
-				}
-
-				if err == nil {
-					ParseWavefrontMtllib(f, info)
+				if f := openObjDependency(filename, dir); f != nil {
+					ParseWavefrontMtllib(f, info, dir)
 					f.Close()
-				} else {
-					Debugln("*** Warning: cannot open material library", filename)
 				}
 			case "usemtl":
 				// Use specified material for following faces
