@@ -16,6 +16,7 @@ So far it has worked really well ([the way the book is designed](#references) he
 - Bounding Volume Hierarchies (BVH) with the Surface Area Heuristic (SAH)
 - Color patterns
 - Textures
+- Normal maps
 - Lights: area (soft shadows), directional, point, spot
 - [Adaptive sampling of area lights](https://ascottix.github.io/blog/aals/adaptive-area-light-sampling.html)
 - Depth of field

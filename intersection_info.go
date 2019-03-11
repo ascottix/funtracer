@@ -44,6 +44,7 @@ func (ii *IntersectionInfo) Update(i Intersection, r Ray, xs *Intersections) {
 
 	if ii.Inside {
 		n = n.Neg()
+		ii.SurfNormalv = ii.SurfNormalv.Neg()
 	}
 
 	ii.Normalv = n

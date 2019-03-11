@@ -13,7 +13,7 @@ type Trimesh struct {
 	Grouper
 	V        []Tuple // Vertices
 	VN       []Tuple // Vertex normals
-	VT       []Tuple
+	VT       []Tuple // Vertex texture coordinates
 	T        []MeshTriangle
 	material *Material // TODO! Handling of material needs to be refactored
 }
@@ -26,6 +26,8 @@ type MeshTriangle struct {
 	E1   Tuple  // Edges
 	E2   Tuple
 	N    Tuple // Normal
+	T    Tuple // Tangent vector
+	B    Tuple // Bitangent vector
 	Mat  *Material
 }
 
@@ -56,9 +58,36 @@ func NewTrimesh(info *ObjInfo, group int) *Trimesh {
 				p[i] = mesh.V[mt.V[i]] // Vertex
 			}
 
+			// Compute normal
 			mt.E1 = p[1].Sub(p[0])
 			mt.E2 = p[2].Sub(p[0])
 			mt.N = mt.E2.CrossProduct(mt.E1).Normalize()
+
+			// Compute tangent and bitangent vectors
+			if len(mesh.VT) > 0 {
+				vt0 := mesh.VT[mt.VT[0]]
+				vt1 := mesh.VT[mt.VT[1]]
+				vt2 := mesh.VT[mt.VT[2]]
+
+				u1 := vt1.X - vt0.X
+				v1 := vt1.Y - vt0.Y
+				u2 := vt2.X - vt0.X
+				v2 := vt2.Y - vt0.Y
+
+				d := 1 / (u1*v2 - v1*u2)
+
+				q1 := mt.E1
+				q2 := mt.E2
+
+				T := Vector(q1.X*v2-q2.X*v1, q1.Y*v2-q2.Y*v1, q1.Z*v2-q2.Z*v1).Mul(d)
+				B := Vector(q2.X*u1-q1.X*u2, q2.Y*u1-q1.Y*u2, q2.Z*u1-q1.Z*u2).Mul(d)
+
+				mt.T = T.Normalize()
+				mt.B = B.Normalize()
+			} else {
+				mt.T = Vector(0xBAD, 0, 0)
+				mt.B = Vector(0xBAD, 0, 0)
+			}
 
 			mt.Mat = f.M
 
@@ -184,30 +213,43 @@ func (t *MeshTriangle) AddIntersections(ray Ray, xs *Intersections) {
 }
 
 func (t *MeshTriangle) NormalAtHit(ii *IntersectionInfo, xs *Intersections) Tuple {
-	if len(t.mesh.VN) == 0 {
-		return t.mesh.NormalToWorld(t.N) // Flat normal
-	}
-	// ...else interpolate
-
 	id := xs.Data(&ii.Intersection)
 
 	// Texture
-	VT1 := t.mesh.VT[t.VT[0]]
-	VT2 := t.mesh.VT[t.VT[1]]
-	VT3 := t.mesh.VT[t.VT[2]]
+	if len(t.mesh.VT) > 0 {
+		VT1 := t.mesh.VT[t.VT[0]]
+		VT2 := t.mesh.VT[t.VT[1]]
+		VT3 := t.mesh.VT[t.VT[2]]
 
-	vt := VT2.Mul(id.tU).Add(VT3.Mul(id.tV)).Add(VT1.Mul(1 - id.tU - id.tV))
-	ii.U = vt.X
-	ii.V = 1 - vt.Y // TODO!!!
+		vt := VT2.Mul(id.tU).Add(VT3.Mul(id.tV)).Add(VT1.Mul(1 - id.tU - id.tV))
+		ii.U = vt.X
+		ii.V = vt.Y
+	}
 
 	// Normal
-	N1 := t.mesh.VN[t.VN[0]]
-	N2 := t.mesh.VN[t.VN[1]]
-	N3 := t.mesh.VN[t.VN[2]]
+	N := t.N
 
-	normal := N2.Mul(id.tU).Add(N3.Mul(id.tV)).Add(N1.Mul(1 - id.tU - id.tV))
+	if len(t.mesh.VN) > 0 {
+		N1 := t.mesh.VN[t.VN[0]]
+		N2 := t.mesh.VN[t.VN[1]]
+		N3 := t.mesh.VN[t.VN[2]]
 
-	return t.mesh.NormalToWorld(normal)
+		N = N2.Mul(id.tU).Add(N3.Mul(id.tV)).Add(N1.Mul(1 - id.tU - id.tV))
+	}
+
+	// Apply normal map if present
+	if nmap := ii.GetNormalMap(); nmap != nil {
+		n := nmap.NormalAtHit(ii)
+
+		// TODO: I think T and B should be interpolated like the normal!
+		T := t.T
+		B := t.B
+
+		ii.SurfNormalv = (T.Mul(n.X).Add(B.Mul(n.Y)).Add(N.Mul(n.Z))).Normalize()
+		ii.HasSurfNormalv = true
+	}
+
+	return t.mesh.NormalToWorld(N)
 }
 
 func (t *MeshTriangle) WorldToObject(point Tuple) Tuple {

@@ -323,3 +323,243 @@ func TestObjDragon(t *testing.T) {
 
 	world.RenderToPNG(camera, "test_obj_dragon.png")
 }
+
+func TestObjSign(t *testing.T) {
+	t.SkipNow()
+
+	info := ParseWavefrontObjFromFile("sign/35 mph speed limit sign final.obj")
+
+	info.Normalize()
+
+	world := NewWorld()
+
+	world.AddLights(NewPointLight(Point(-2, 8, 9), White))
+
+	mesh := NewTrimesh(info, -1)
+
+	txt := NewImageTexture()
+	txt.LoadFromFile("sign/35 mph speed limit sign unwrap 4888.png")
+
+	txt.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+		return u, 1 - v
+	}
+
+	m := NewMaterial()
+	m.SetPattern(txt)
+
+	mesh.SetMaterial(m)
+
+	group := NewGroup()
+	group.SetTransform(Scaling(-1, 1, 1)) // Hack... texture is mirrored horizontally, so we flip the object to compensate
+
+	mesh.AddToGroup(group)
+
+	group.BuildBVH()
+
+	world.AddObjects(group)
+
+	camera := NewCamera(400*2, 400*2, Pi/5)
+	camera.SetTransform(EyeViewpoint(Point(0, 1, 5), Point(0, 0, 0), Vector(0, 1, 0)))
+
+	world.RenderToPNG(camera, "test_sign_35mph.png")
+}
+
+func TestObjCapsule(t *testing.T) {
+	t.SkipNow()
+
+	// info := ParseWavefrontObjFromFile("capsule/capsule.obj")
+	info := ParseWavefrontObjFromFile("Castle/Castle OBJ.obj")
+
+	info.Normalize()
+
+	world := NewWorld()
+
+	world.AddLights(NewPointLight(Point(-2, 8, 9), White))
+
+	mesh := NewTrimesh(info, -1)
+
+	group := NewGroup()
+	// group.SetTransform(Scaling(1,1,1), RotationY(Pi/3), RotationX(-Pi/2))
+	// group.SetTransform(RotationY(Pi/3), RotationX(+Pi/2))
+	group.SetTransform(RotationY(Pi / 6))
+
+	mesh.AddToGroup(group)
+
+	group.BuildBVH()
+
+	world.AddObjects(group)
+
+	camera := NewCamera(400*2, 400*2, Pi/10)
+	camera.SetTransform(EyeViewpoint(Point(0, 3, 5), Point(0, 0, 0), Vector(0, 1, 0)))
+
+	world.RenderToPNG(camera, "test_capsule.png")
+}
+
+func TestObjMeshNormalMap(t *testing.T) {
+	t.SkipNow()
+
+	data := `
+v 0 1 0
+v 1 1 0
+v 0 0 0
+v 1 0 0
+
+vt 0 1
+vt 1 1
+vt 0 0
+vt 1 0
+
+f 1/1 2/2 3/3 
+f 2/2 4/4 3/3
+	`
+	info := ParseWavefrontObjFromString(data)
+
+	info.Normalize()
+	info.Autosmooth()
+
+	world := NewWorld()
+
+	world.AddLights(NewPointLight(Point(-2, 18, 9), White))
+
+	mesh := NewTrimesh(info, -1)
+
+	txt := NewImageTexture()
+	txt.LoadFromFile("Wall_Stone_003_COLOR.jpg")
+
+	// txt.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+	// 	return u, 1 - v
+	// }
+
+	txt2 := NewImageTexture()
+	txt2.linear = true
+	txt2.LoadFromFile("Wall_Stone_003_NRM.jpg")
+
+	m := NewMaterial()
+	m.SetPattern(txt)
+	m.NormalMap = txt2
+
+	mesh.SetMaterial(m)
+
+	group := NewGroup()
+	// group.SetTransform(Scaling(-1, 1, 1)) // Hack... texture is mirrored horizontally, so we flip the object to compensate
+
+	mesh.AddToGroup(group)
+
+	group.BuildBVH()
+
+	world.AddObjects(group)
+
+	camera := NewCamera(400*2, 400*2, Pi/5)
+	camera.SetTransform(EyeViewpoint(Point(0, 1, 5), Point(0, 0, 0), Vector(0, 1, 0)))
+
+	world.RenderToPNG(camera, "test_mesh_normalmap.png")
+}
+
+// To unlock this scene, follows the [#] steps in order!
+//
+// [1] create a scenes/pan folder
+// [2] visit the https://3dtextures.me/ site and download the Azulejos 003 texture from the Tiles section
+// [3] unzip Azulejos_003_COLOR.jpg and Azulejos_003_NORM.jpg in the scenes/pan folder
+// [4] download the model casserole_obj.zip from the original scene at http://www.oyonale.com/modeles.php?lang=en&page=41
+// [5] unzip pan_obj.obj in the scenes/pan folder
+// [6] comment line [6a] when ready
+// [7] run go test -timeout 2h to render!
+//
+// Note: rendering takes about 20 minutes on my PC but it may be more or less on yours,
+// disable supersampling or reduce the image size to go faster.
+func TestObjPan(t *testing.T) {
+	t.SkipNow() // [6a] comment this line to enable the test
+
+	world := NewWorld()
+
+	world.Ambient = Gray(0.2)
+
+	// Note: a point light is much faster in case we need to just play with the geometry
+	light := NewRectLight(RGB(1, 1, 1).Mul(0.9))
+	light.SetSize(3, 1)
+	light.SetDirection(Point(2, 0.75, -1), Point(0, 0, 0))
+	world.AddLights(light)
+
+	// Wall
+	wall := NewPlane()
+	wall.SetTransform(RotationX(Pi/2), Translation(0, 2, 0))
+
+	// Texture for wall and floor
+	txt_wall := NewImageTexture()
+	txt_wall.LoadFromFile("scenes/pan/Azulejos_003_COLOR.jpg")
+	txt_wall.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+		return u, v + 0.26 // To align the tiles border with the planes crossing line
+	}
+	wall.Material().SetPattern(txt_wall)
+	wall.Material().SetDiffuse(0.5)
+
+	// Normal map gives just a slight depth to the tiles separation in this scene, but still worth it
+	nrm_wall := NewImageTexture()
+	nrm_wall.linear = true
+	nrm_wall.LoadFromFile("scenes/pan/Azulejos_003_NORM.jpg")
+	nrm_wall.onMapUv = txt_wall.onMapUv
+	wall.Material().NormalMap = nrm_wall
+
+	// Floor will use the same texture as the wall
+	floor := NewPlane()
+	floor.SetTransform(Translation(0, -0.5, 0))
+
+	floor.Material().SetPattern(txt_wall)
+	floor.Material().SetDiffuse(1.1)
+	floor.Material().NormalMap = nrm_wall
+	floor.Material().SetReflect(0.2, White)
+
+	world.AddObjects(floor, wall)
+
+	// Pan
+	info := ParseWavefrontObjFromFile("scenes/pan/pan_obj.obj")
+
+	info.Normalize()
+	info.Autosmooth()
+
+	pan_body := NewTrimesh(info, 1)
+	pan_handle := NewTrimesh(info, 2)
+	pan_joint := NewTrimesh(info, 3)
+
+	// Copper material
+	copper_color := CSS("#b85d33")
+	copper := NewMaterial()
+	copper.SetDiffuse(0.6)
+	copper.SetDiffuseColor(copper_color)
+	copper.SetReflect(0.4, copper_color.Mul(1.1))
+	copper.Roughness = 0.1
+	copper.SetSpecular(3)
+	copper.SetShininess(10)
+
+	pan_body.SetMaterial(copper)
+	pan_joint.SetMaterial(copper)
+
+	// Black plastic material
+	black_plastic := NewMaterial()
+	black_plastic.SetDiffuseColor(Gray(0.015))
+	copper.Roughness = 0.5
+	black_plastic.SetShininess(10)
+
+	pan_handle.SetMaterial(black_plastic)
+
+	// Create a group for the meshes so we can use BVH and optimize, or rendering would take forever
+	group := NewGroup()
+	group.SetTransform(Translation(0, -0.15, 0), RotationY(-Pi/2))
+
+	pan_body.AddToGroup(group)
+	pan_handle.AddToGroup(group)
+	pan_joint.AddToGroup(group)
+
+	group.BuildBVH()
+
+	world.AddObjects(group)
+
+	// Camera
+	camera := NewCamera(800, 800, 0.15) // Note: 400x400 is usually good enough to test changes
+	camera.SetTransform(EyeViewpoint(Point(-6, 4, -9), Point(0, 0, 0), Vector(0, 1, 0)))
+
+	// Render!
+	world.Options.Supersampling = 4 // Note: comment out to just "play" with the scene
+
+	world.RenderToPNG(camera, "test_obj_pan.png")
+}

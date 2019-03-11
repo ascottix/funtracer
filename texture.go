@@ -66,7 +66,7 @@ func (t *ImageTexture) Load(r io.Reader) error {
 
 	if err == nil {
 		bounds := image.Bounds()
-		
+
 		w := bounds.Max.X - bounds.Min.X
 		h := bounds.Max.Y - bounds.Min.Y
 
@@ -119,6 +119,8 @@ func (t *ImageTexture) LoadFromFile(filename string) error {
 	if err == nil {
 		err = t.Load(f)
 		f.Close()
+	} else {
+		panic("Cannot load texture: " + filename)
 	}
 
 	return err
@@ -151,6 +153,9 @@ func textureToImage(u float64, imgSize int) (i, j int, t float32) {
 }
 
 func (t *ImageTexture) TextureAt(x, y int) ColorRGBA {
+	if t.w == 0 {
+		return ColorRGBA{0, 0, 0, 1}
+	}
 	return t.data[y*t.w+x]
 }
 

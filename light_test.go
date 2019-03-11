@@ -261,23 +261,23 @@ func TestNormalMaps(t *testing.T) {
 	// txt.LoadFromFile("head.jpg")
 	// txt.LoadFromFile("wall.png")
 	// txt.LoadFromFile("Well Preserved Chesterfield - (Normal Map_2).png")
-	txt.LoadFromFile("Wall_Stone_003_NRM.jpg")
+	txt.LoadFromFile("marble_coloured_001_NRM.png")
 	txt.wrap = TwPeriodic
 
-	txt.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
-		return u / 3, v / 3
-	}
+	// txt.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+	// 	return u / 3, v / 3
+	// }
 
 	txt3 := NewImageTexture()
 	// txt.LoadFromFile("head.jpg")
 	// txt.LoadFromFile("wall.png")
 	// txt.LoadFromFile("Well Preserved Chesterfield - (Normal Map_2).png")
-	txt3.LoadFromFile("Wall_Stone_003_COLOR.jpg")
+	txt3.LoadFromFile("marble_coloured_001_COLOR.png")
 	txt3.wrap = TwPeriodic
 
-	txt3.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
-		return u / 3, v / 3
-	}
+	// txt3.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+	// 	return u / 3, v / 3
+	// }
 
 	floor.Material().NormalMap = txt
 	floor.Material().SetPattern(txt3)
@@ -295,23 +295,23 @@ func TestNormalMaps(t *testing.T) {
 	// 	return u * 3, v * 3
 	// }
 
-	txt2 := NewImageTexture()
-	txt2.linear = true
-	// txt2.LoadFromFile("NormalMap.jpg")
-	txt2.LoadFromFile("marble_coloured_001_NRM.png")
+	// txt2 := NewImageTexture()
+	// txt2.linear = true
+	// // txt2.LoadFromFile("NormalMap.jpg")
+	// txt2.LoadFromFile("marble_coloured_001_NRM.png")
 
-	txt4 := NewImageTexture()
-	txt4.LoadFromFile("marble_coloured_001_COLOR.png")
+	// txt4 := NewImageTexture()
+	// txt4.LoadFromFile("marble_coloured_001_COLOR.png")
 
-	txt2.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
-		return u * 2, v * 2
-	}
-	txt4.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
-		return u * 2, v * 2
-	}
+	// txt2.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+	// 	return u * 2, v * 2
+	// }
+	// txt4.onMapUv = func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+	// 	return u * 2, v * 2
+	// }
 
-	s1.Material().NormalMap = txt2
-	s1.Material().SetPattern(txt2)
+	// s1.Material().NormalMap = txt2
+	// s1.Material().SetPattern(txt2)
 
 	// light := NewPointLight(Point(0,5,-5), RGB(1, 1, 1).Mul(0.9))
 	// light := NewPointLight(Point(-5,5,-5), RGB(1, 1, 1).Mul(0.9))
@@ -320,7 +320,7 @@ func TestNormalMaps(t *testing.T) {
 	world := NewWorld()
 	world.SetAmbient(Gray(0.1))
 
-	world.AddObjects(floor, s1)
+	world.AddObjects(floor /*, s1*/)
 
 	world.AddLights(light)
 
