@@ -2,7 +2,7 @@
 
 A simple raytracer in Go.
 
-![A view of Earth from space](https://ascottix.github.io/funtracer/earth_in_space.png)
+![A copper saucepan](https://raw.githubusercontent.com/ascottix/ascottix.github.io/master/funtracer/casserole.jpg)
 
 ## Features
 
