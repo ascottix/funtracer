@@ -57,6 +57,16 @@ type ImageTexture struct {
 type NormalMap struct {
 }
 
+func NewTextureOnMapUvHandler(addU, mulU, addV, mulV float64) TextureOnMapUv {
+	return func(u, v float64, ii *IntersectionInfo) (float64, float64) {
+		return u*mulU + addU, v*mulV + addV
+	}
+}
+
+func TextureMirrorV(u, v float64, ii *IntersectionInfo) (float64, float64) {
+	return u, 1 - v
+}
+
 func NewImageTexture() *ImageTexture {
 	return new(ImageTexture)
 }

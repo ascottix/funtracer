@@ -26,9 +26,9 @@ v -1.0000 0.5000 0.0000
 v 1 0 0
 v 1 1 0
 	`
-	info := ParseWavefrontObjFromString(data)
+	obj := ParseWavefrontObjFromString(data)
 
-	v := info.V
+	v := obj.V
 
 	if len(v) != 4 || !v[0].Equals(Point(-1, 1, 0)) || !v[1].Equals(Point(-1, 0.5, 0)) || !v[2].Equals(Point(1, 0, 0)) || !v[3].Equals(Point(1, 1, 0)) {
 		t.Errorf("obj vertex failed")
@@ -45,15 +45,15 @@ v 1 1 0
 f 1 2 3 
 f 1 3 4
 	`
-	info := ParseWavefrontObjFromString(data)
+	obj := ParseWavefrontObjFromString(data)
 
-	if len(info.F) != 2 {
+	if len(obj.F) != 2 {
 		t.Errorf("obj triangle failed")
 		t.SkipNow()
 	}
 
-	t1 := info.F[0]
-	t2 := info.F[1]
+	t1 := obj.F[0]
+	t2 := obj.F[1]
 
 	if t1.V[0] != 0 || t1.V[1] != 1 || t1.V[2] != 2 || t2.V[0] != 0 || t2.V[1] != 2 || t2.V[2] != 3 {
 		t.Errorf("obj triangle vertices mismatch")
@@ -69,16 +69,16 @@ v 1 1 0
 v 0 2 0
 f 1 2 3 4 5
 	`
-	info := ParseWavefrontObjFromString(data)
+	obj := ParseWavefrontObjFromString(data)
 
-	if len(info.F) != 3 {
+	if len(obj.F) != 3 {
 		t.Errorf("obj polygon failed")
 		t.SkipNow()
 	}
 
-	t1 := info.F[0]
-	t2 := info.F[1]
-	t3 := info.F[2]
+	t1 := obj.F[0]
+	t2 := obj.F[1]
+	t3 := obj.F[2]
 
 	if t1.V[0] != 0 || t1.V[1] != 1 || t1.V[2] != 2 || t2.V[0] != 0 || t2.V[1] != 2 || t2.V[2] != 3 || t3.V[0] != 0 || t3.V[1] != 3 || t3.V[2] != 4 {
 		t.Errorf("obj polygon vertices mismatch")
@@ -97,9 +97,9 @@ f 1 2 3
 g SecondGroup
 f 1 4 5
 	`
-	info := ParseWavefrontObjFromString(data)
+	obj := ParseWavefrontObjFromString(data)
 
-	if len(info.Groups) != 3 {
+	if len(obj.Groups) != 3 {
 		t.Errorf("obj group count failed")
 	}
 }
@@ -167,14 +167,14 @@ f  12  13  11
 f  19  12  11
 	`
 
-	info := ParseWavefrontObjFromString(data)
-	info.Normalize()
+	obj := ParseWavefrontObjFromString(data)
+	obj.Normalize()
 
 	world := NewWorld()
 
 	world.AddLights(NewPointLight(Point(-2, 8, -9), White))
 
-	mesh := NewTrimesh(info, -1)
+	mesh := NewTrimesh(obj, -1)
 
 	group := NewGroup()
 
@@ -193,7 +193,7 @@ f  19  12  11
 func TestObjTeapot(t *testing.T) {
 	TestWithImage(t)
 
-	info := ParseWavefrontObjFromFile("scenes/teapot.obj")
+	obj := ParseWavefrontObjFromFile("scenes/teapot.obj")
 
 	world := NewWorld()
 
@@ -210,9 +210,9 @@ func TestObjTeapot(t *testing.T) {
 		world.AddLights(light)
 	}
 
-	info.Normalize()
+	obj.Normalize()
 
-	mesh := NewTrimesh(info, -1)
+	mesh := NewTrimesh(obj, -1)
 
 	group := NewGroup()
 	group.SetTransform(RotationX(-Pi/2), Scaling(3, 3, 4), Translation(0, 0, 0.12))
@@ -455,7 +455,7 @@ f 2/2 4/4 3/3
 	world.RenderToPNG(camera, "test_mesh_normalmap.png")
 }
 
-// To unlock this scene, follows the [#] steps in order!
+// To use this scene, follows the [#] steps in order!
 //
 // [1] create a scenes/pan folder
 // [2] visit the https://3dtextures.me/ site and download the Azulejos 003 texture from the Tiles section
@@ -512,14 +512,14 @@ func TestObjPan(t *testing.T) {
 	world.AddObjects(floor, wall)
 
 	// Pan
-	info := ParseWavefrontObjFromFile("scenes/pan/pan_obj.obj")
+	obj := ParseWavefrontObjFromFile("scenes/pan/pan_obj.obj")
 
-	info.Normalize()
-	info.Autosmooth()
+	obj.Normalize()
+	obj.Autosmooth()
 
-	pan_body := NewTrimesh(info, 1)
-	pan_handle := NewTrimesh(info, 2)
-	pan_joint := NewTrimesh(info, 3)
+	pan_body := NewTrimesh(obj, 1)
+	pan_handle := NewTrimesh(obj, 2)
+	pan_joint := NewTrimesh(obj, 3)
 
 	// Copper material
 	copper_color := CSS("#b85d33")
@@ -562,4 +562,78 @@ func TestObjPan(t *testing.T) {
 	world.Options.Supersampling = 4 // Note: comment out to just "play" with the scene
 
 	world.RenderToPNG(camera, "test_obj_pan.png")
+}
+
+func TestObjIss(t *testing.T) {
+	t.SkipNow()
+
+	obj := ParseWavefrontObjFromFile("scenes/ISS/iss.obj")
+
+	obj.Normalize()
+	obj.Autosmooth()
+
+	world := NewWorld()
+
+	world.AddLights(NewPointLight(Point(-3, 10, 15), Gray(0.8)))
+	world.AddLights(NewDirectionalLight(Point(0, -3, 1), Gray(0.3)))
+
+	mesh := NewTrimesh(obj, -1)
+
+	txt_diff := NewImageTexture()
+	txt_diff.LoadFromFile("scenes/ISS/textures/iss_diffuse.png")
+	txt_diff.onMapUv = TextureMirrorV
+	mesh.Material().SetPattern(txt_diff)
+
+	txt_norm := NewImageTexture()
+	txt_norm.linear = true
+	txt_norm.LoadFromFile("scenes/ISS/textures/iss_normal.png")
+	txt_norm.onMapUv = TextureMirrorV
+	mesh.Material().NormalMap = txt_norm
+
+	s := 10.
+
+	iss := NewGroup()
+	iss.SetTransform(RotationX(-Pi / 2))
+	iss.SetTransform(Translation(0, s*0.927, 5.4), RotationX(Pi/2+Pi/10), Scaling(0.9))
+
+	mesh.AddToGroup(iss)
+
+	iss.BuildBVH()
+
+	earth := NewSphere()
+	earth.SetTransform(Scaling(s), RotationX(2.5))
+	earth.Material().SetDiffuse(1.2)
+	applyTexture(earth, "../textures/2k_earth_daymap.jpg")
+
+	atmo := NewSphere()
+	atmo.SetTransform(Scaling(s+0.04), RotationX(2.5))
+	atmo.Material().SetDiffuse(0.1).SetDiffuseColor(CSS("dodgerblue")).SetReflect(0.01, White).SetRefract(0.9, CSS("white").Mul(1.2)).SetIor(1)
+	atmo.SetShadow(false)
+
+	clouds := NewSphere()
+	clouds.SetTransform(Scaling(s+0.01), RotationX(2.5))
+	clouds.Material().SetDiffuse(0).SetReflect(0, White).SetRefract(1, CSS("white")).SetIor(1)
+	clouds.SetShadow(false)
+	txt := applyTexture(clouds, "../textures/8k_earth_clouds.jpg") // Use 2k for test and 8k for final rendering
+
+	// Add transparency to the texture, based on how bright it is
+	for i := range txt.data {
+		txt.data[i].a = txt.data[i].r*0.299 + txt.data[i].g*0.587 + txt.data[i].b*0.114
+	}
+
+	// Change the transparency of the sphere to match the texture at the hit
+	txt.onApply = func(c ColorRGBA, ii *IntersectionInfo) {
+		ii.Mat.DiffuseColor = c.RGB()
+		ii.Mat.DiffuseLevel = 1.5 // Boost white a little
+		ii.Mat.RefractLevel = float64(1 - c.a)
+	}
+
+	world.AddObjects(iss, earth, atmo, clouds)
+
+	camera := NewCamera(400*3, 300*3, Pi/7.2)
+	camera.SetTransform(EyeViewpoint(Point(0, s-0.5, s), Point(0, s*0.9, 0), Vector(0, 1, 0)))
+
+	world.Options.Supersampling = 4 // Note: comment out to just "play" with the scene
+
+	world.RenderToPNG(camera, "test_iss.png")
 }
