@@ -229,6 +229,16 @@ func (t *MeshTriangle) NormalAtHit(ii *IntersectionInfo, xs *Intersections) Tupl
 	// Normal
 	N := t.N
 
+	// This is a trick to mark the triangle edges (wireframe),
+	// but the line width depends on the triangle area and therefore is not constant,
+	// which should be fixed
+	/*
+		const EdgeWidth = 0.02
+		if id.tU < EdgeWidth || id.tV < EdgeWidth || (1-id.tU-id.tV) < EdgeWidth {
+			return Vector(0,0,0)
+		}
+	*/
+
 	if len(t.mesh.VN) > 0 {
 		N1 := t.mesh.VN[t.VN[0]]
 		N2 := t.mesh.VN[t.VN[1]]
