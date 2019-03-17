@@ -51,7 +51,7 @@ type ImageTexture struct {
 	onImage TextureOnImage
 	onMapUv TextureOnMapUv
 	onApply TextureOnApply
-	linear  bool
+	linear  bool // TODO: remove this!
 }
 
 type NormalMap struct {
@@ -62,6 +62,11 @@ func NewTextureOnMapUvHandler(addU, mulU, addV, mulV float64) TextureOnMapUv {
 		return u*mulU + addU, v*mulV + addV
 	}
 }
+
+const MaxImageRgbaValue = 65535
+
+var colorLinearLookup = make([]float32, MaxImageRgbaValue+1)
+var colorGammaLookup = make([]float32, MaxImageRgbaValue+1)
 
 func TextureMirrorV(u, v float64, ii *IntersectionInfo) (float64, float64) {
 	return u, 1 - v
@@ -84,34 +89,22 @@ func (t *ImageTexture) Load(r io.Reader) error {
 		t.w = w
 		t.h = h
 
+		colorLookup := colorGammaLookup
+
+		if t.linear {
+			colorLookup = colorLinearLookup
+		}
+
 		// Convert the texture to ColorRGBA format
 		for y := 0; y < h; y++ {
 			for x := 0; x < w; x++ {
-				const Max = 65535
-
-				var c ColorRGBA
-
 				r, g, b, a := image.At(bounds.Min.X+x, bounds.Min.Y+y).RGBA()
 
-				if t.linear {
-					// Linear space is used for normal maps
-					c = ColorRGBA{
-						float32(r) / Max,
-						float32(g) / Max,
-						float32(b) / Max,
-						float32(a) / Max,
-					}
-				} else {
-					// sRGB is the color space for most JPEG and PNG images
-					c = ColorRGBA{
-						float32(ErpsRGBToLinear(float64(r) / Max)),
-						float32(ErpsRGBToLinear(float64(g) / Max)),
-						float32(ErpsRGBToLinear(float64(b) / Max)),
-						float32(a) / Max,
-					}
-				}
-
-				t.data[y*w+x] = c
+				o := x + y*w
+				t.data[o].r = colorLookup[r]
+				t.data[o].g = colorLookup[g]
+				t.data[o].b = colorLookup[b]
+				t.data[o].a = float32(a) / MaxImageRgbaValue
 			}
 		}
 
@@ -232,4 +225,13 @@ func (t *ImageTexture) NormalAtHit(ii *IntersectionInfo) Tuple {
 	ct = ct.Mul(2).Add(ColorRGBA{-1, -1, -1, 0})
 
 	return Vector(float64(ct.r), float64(ct.g), float64(ct.b))
+}
+
+// Converting from the image color space can be _very_ slow, a lookup table improves performance a lot
+func init() {
+	for v := 0; v <= MaxImageRgbaValue; v++ {
+		f := float64(v) / MaxImageRgbaValue               // Value (a color component) is now a 64-bit float from 0 to 1
+		colorLinearLookup[v] = float32(f)                 // No conversion
+		colorGammaLookup[v] = float32(ErpsRGBToLinear(f)) // Convert from standard gamma
+	}
 }
