@@ -71,7 +71,7 @@ func (p *Cone) LocalIntersect(ray Ray) (xs []float64) {
 		x := ray.Origin.X + t*ray.Direction.X
 		z := ray.Origin.Z + t*ray.Direction.Z
 
-		return (x*x + z*z) <= r
+		return (x*x + z*z) <= r*r
 	}
 
 	if p.Capped {

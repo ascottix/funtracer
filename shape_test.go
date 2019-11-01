@@ -340,7 +340,7 @@ func TestConeVisualization(t *testing.T) {
 
 	w.AddLights(NewPointLight(Point(-10, 10, -10), White))
 
-	c1 := NewCone(-1, 1, true)
+	c1 := NewCone(0, 2, true)
 	c2 := NewCone(-1.5, 1, true)
 	c2.SetTransform(Translation(2, -2, 0))
 	c3 := NewCone(-0.5, 1, false)
@@ -359,7 +359,7 @@ func TestConeVisualization(t *testing.T) {
 	w.AddObjects(c1, c2, c3, c4, c5, u1, u2)
 
 	camera := NewCamera(640, 480, Pi/2)
-	camera.SetTransform(EyeViewpoint(Point(0, 0, -5), Point(0, 0, 0), Vector(0, 1, 0)))
+	camera.SetTransform(EyeViewpoint(Point(0, 3, -5), Point(0, 0, 0), Vector(0, 1, 0)))
 
 	w.RenderToPNG(camera, "test_cones.png")
 }

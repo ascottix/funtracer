@@ -38,6 +38,8 @@ func createPlaneScene() (*World, *Camera) {
 
 	world.AddLights(light, light2)
 
+	world.ErpCanvasToImage = ErpLinear // Test scenes from book are not gamma corrected
+
 	camera := NewCamera(640, 320, Pi/3)
 	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -5), Point(0, 1, 0), Vector(0, 1, 0)))
 

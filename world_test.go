@@ -216,6 +216,8 @@ func TestWorldScene(t *testing.T) {
 
 	world.AddLights(light)
 
+	world.ErpCanvasToImage = ErpLinear
+
 	camera := NewCamera(640, 320, Pi/3)
 	camera.SetTransform(EyeViewpoint(Point(0, 1.5, -5), Point(0, 1, 0), Vector(0, 1, 0)))
 
