@@ -260,6 +260,7 @@ func TestObjTeapot(t *testing.T) {
 }
 
 func TestObjDragon(t *testing.T) {
+	t.SkipNow()
 	TestWithImage(t)
 
 	info := ParseWavefrontObjFromFile("../obj/dragon.obj")

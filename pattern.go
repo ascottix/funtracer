@@ -94,7 +94,7 @@ func NewStripePattern(a, b Color) Pattern {
 	c := [2]Color{a, b}
 
 	return NewBasicPattern(func(point Tuple) Color {
-		return c[uint(math.Floor(point.X))%2]
+		return c[uint32(math.Floor(point.X))%2]
 	})
 }
 
@@ -102,7 +102,7 @@ func NewCheckerPattern(a, b Color) Pattern {
 	c := [2]Color{a, b}
 
 	return NewBasicPattern(func(point Tuple) Color {
-		return c[uint(math.Floor(point.X)+math.Floor(point.Y)+math.Floor(point.Z))%2]
+		return c[uint32(math.Floor(point.X)+math.Floor(point.Y)+math.Floor(point.Z))%2]
 	})
 }
 
