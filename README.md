@@ -1,6 +1,6 @@
 # Funtracer
 
-A simple raytracer in Go.
+A raytracer in Go.
 
 ![A copper saucepan](https://raw.githubusercontent.com/ascottix/ascottix.github.io/master/funtracer/casserole.jpg)
 
@@ -31,9 +31,9 @@ Go takes care of everything, just run:
 
 As the program was developed using a test-driven approach, there are a number of tests and examples to try too. To run them all use:
 
-`go test`
+`go test ./...`
 
-Some tests will generate a PNG file, look for files named `test_*.png`.
+Some tests will generate a PNG file, look for files named `test_*.png`. To delete these files run `find . -name '*.png' -type f -delete` or `del /s /q *.png` on Windows.
 
 ## How to use
 
@@ -43,13 +43,13 @@ Note that any option, if present, must be specified **before** the name of the s
 
 If no scene file is specified, the program looks for a file named `have.fun` and reads it if present.
 
-The directory `scenes` contains several scene file to try. Try for example:
+The directory `objects_testdata` contains several scene file to try. Try for example:
 
-`./funtracer scenes/teapot`
+`./funtracer objects_testdata/teapot`
 
 or if you can wait a bit more add supersampling:
 
-`./funtracer -ss 4 scenes/teapot`
+`./funtracer -ss 4 objects_testdata/teapot`
 
 The `-ss 4` option renders the scene 16 times, sampling each pixel at a slightly different position every time. This helps reduce aliasing and other visual artifacts.
 

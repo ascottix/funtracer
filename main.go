@@ -10,6 +10,9 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	. "ascottix/funtracer/objects"
+	. "ascottix/funtracer/options"
 )
 
 func fail(err error) {
